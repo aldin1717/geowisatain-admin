@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="mb-10 text-center lg:text-left">
-    <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary-700 text-white mb-6">
+    <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary-100 text-primary-700 mb-6 shadow-sm ring-1 ring-primary-200/80">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
     </div>
-    <h2 class="text-3xl font-semibold text-stone-900 tracking-tight">{{ config('app.name', 'Grand Hotel') }}</h2>
+    <h2 class="text-3xl font-semibold text-stone-900 tracking-tight">{{ config('app.name', 'Geowisata Inn') }}</h2>
     <p class="mt-2 text-stone-500">Sign in to access the management system</p>
 </div>
 
@@ -44,7 +44,7 @@
     </div>
 
     <div>
-        <button type="submit" class="flex w-full justify-center rounded-md bg-primary-700 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-colors">
+        <button type="submit" class="flex w-full justify-center rounded-md bg-primary-600 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-colors">
             Sign in
         </button>
     </div>

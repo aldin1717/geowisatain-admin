@@ -10,6 +10,7 @@ use App\Models\Room;
 use App\Services\BookingService;
 use App\Services\CheckInService;
 use App\Services\CheckOutService;
+use App\Services\PaymentService;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -17,7 +18,8 @@ class BookingController extends Controller
     public function __construct(
         protected BookingService $bookingService,
         protected CheckInService $checkInService,
-        protected CheckOutService $checkOutService
+        protected CheckOutService $checkOutService,
+        protected PaymentService $paymentService
     ) {}
 
     public function index(Request $request)
@@ -64,7 +66,7 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $booking->load(['guest', 'room.roomType', 'creator', 'checkedInBy', 'checkedOutBy']);
+        $booking->load(['guest', 'room.roomType', 'creator', 'checkedInBy', 'checkedOutBy', 'payments' => fn ($query) => $query->latest()]);
         return view('bookings.show', compact('booking'));
     }
 
@@ -98,6 +100,27 @@ class BookingController extends Controller
             return back()->with('success', 'Check-out processed successfully.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function recordPayment(Request $request, Booking $booking)
+    {
+        $totalPaid = (float) $booking->payments()->sum('amount');
+        $remaining = max((float) $booking->grand_total - $totalPaid, 0);
+
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:' . $remaining],
+            'payment_method' => ['required', 'in:cash,transfer,debit_card,credit_card,other'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        try {
+            $this->paymentService->processPayment($booking, $validated);
+
+            return redirect()->route('bookings.show', $booking)
+                ->with('success', 'Payment recorded successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 }

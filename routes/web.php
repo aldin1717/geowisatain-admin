@@ -7,6 +7,7 @@ use App\Http\Controllers\GuestController;
 use App\Http\Controllers\RoomTypeController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ReportController;
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -26,5 +27,8 @@ Route::middleware('auth')->group(function () {
         Route::resource('bookings', BookingController::class);
         Route::post('bookings/{booking}/check-in', [BookingController::class, 'checkIn'])->name('bookings.check-in');
         Route::post('bookings/{booking}/check-out', [BookingController::class, 'checkOut'])->name('bookings.check-out');
+        Route::post('bookings/{booking}/payments', [BookingController::class, 'recordPayment'])->name('bookings.payments.store');
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
     });
 });

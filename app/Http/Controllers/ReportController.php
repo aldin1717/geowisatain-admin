@@ -14,7 +14,7 @@ class ReportController extends Controller
     {
         [$period, $anchorDate, $start, $end] = $this->periodRange($request);
         $payments = $this->paymentsForRange($start, $end)
-            ->with(['booking.guest', 'booking.room'])
+            ->with(['booking.guest', 'booking.room', 'billingGroup.payerGuest', 'billingGroup.bookings:id,billing_group_id'])
             ->orderByDesc('payment_date')
             ->get();
 
@@ -30,6 +30,12 @@ class ReportController extends Controller
             ];
         }
 
+        $summary = [
+            'day' => $payments->sum('amount'),
+            'week' => $this->paymentsForRange($anchorDate->copy()->startOfWeek(Carbon::MONDAY)->startOfDay(), $anchorDate->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay())->sum('amount'),
+            'month' => $this->paymentsForRange($anchorDate->copy()->startOfMonth()->startOfDay(), $anchorDate->copy()->endOfMonth()->endOfDay())->sum('amount'),
+        ];
+
         return view('reports.index', [
             'period' => $period,
             'anchorDate' => $anchorDate,
@@ -38,9 +44,16 @@ class ReportController extends Controller
             'payments' => $payments,
             'totalIncome' => (float) $payments->sum('amount'),
             'transactionCount' => $payments->count(),
-            'bookingCount' => $payments->pluck('booking_id')->unique()->count(),
+            'bookingCount' => $payments->flatMap(function (Payment $payment) {
+                if ($payment->billingGroup) {
+                    return $payment->billingGroup->bookings->pluck('id');
+                }
+
+                return $payment->booking_id ? [$payment->booking_id] : [];
+            })->unique()->count(),
             'dailyReport' => $dailyReport,
             'maxDailyIncome' => max(1, ...array_column($dailyReport, 'amount')),
+            'summary' => $summary,
         ]);
     }
 
@@ -48,7 +61,7 @@ class ReportController extends Controller
     {
         [$period, $anchorDate, $start, $end] = $this->periodRange($request);
         $payments = $this->paymentsForRange($start, $end)
-            ->with(['booking.guest', 'booking.room'])
+            ->with(['booking.guest', 'booking.room', 'billingGroup.payerGuest', 'billingGroup.bookings:id,billing_group_id'])
             ->orderBy('payment_date')
             ->get();
         $periodLabel = $period === 'week' ? 'mingguan' : 'bulanan';
@@ -63,8 +76,8 @@ class ReportController extends Controller
                 fputcsv($output, [
                     $payment->payment_date->format('Y-m-d H:i:s'),
                     $payment->payment_number,
-                    $payment->booking?->booking_number,
-                    $this->safeCsvText($payment->booking?->guest?->full_name),
+                    $payment->billingGroup?->invoice_number ?? $payment->booking?->booking_number,
+                    $this->safeCsvText($payment->billingGroup?->payerGuest?->full_name ?? $payment->booking?->guest?->full_name),
                     $this->safeCsvText($payment->booking?->room?->room_number),
                     $payment->payment_method->label(),
                     $payment->amount,

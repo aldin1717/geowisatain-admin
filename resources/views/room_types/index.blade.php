@@ -6,7 +6,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-semibold text-stone-900">Room Types</h1>
-            <p class="mt-1 text-sm text-stone-500">Manage categories of rooms and their base pricing.</p>
+            <p class="mt-1 text-sm text-stone-500">Manage room and ballroom types and descriptions.</p>
         </div>
         <a href="{{ route('room-types.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-700 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -36,9 +36,7 @@
                 <thead class="bg-stone-50 border-b border-stone-200">
                     <tr>
                         <th class="px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Base Price</th>
-                        <th class="px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Capacity</th>
-                        <th class="px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Category</th>
                         <th class="px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Rooms</th>
                         <th class="px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider text-right">Actions</th>
                     </tr>
@@ -49,15 +47,7 @@
                             <td class="px-6 py-4">
                                 <a href="{{ route('room-types.show', $type) }}" class="font-medium text-stone-900 hover:text-primary-700">{{ $type->name }}</a>
                             </td>
-                            <td class="px-6 py-4 text-stone-600">Rp {{ number_format($type->base_price, 0, ',', '.') }}</td>
-                            <td class="px-6 py-4 text-stone-600">{{ $type->capacity }} {{ Str::plural('person', $type->capacity) }}</td>
-                            <td class="px-6 py-4">
-                                @if($type->is_active)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">Active</span>
-                                @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-stone-100 text-stone-800">Inactive</span>
-                                @endif
-                            </td>
+                            <td class="px-6 py-4 text-stone-600">{{ $type->category === 'ballroom' ? 'Ballroom' : 'Room' }}</td>
                             <td class="px-6 py-4 text-stone-600">{{ $type->rooms_count }}</td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
@@ -72,7 +62,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-stone-500">
+                            <td colspan="4" class="px-6 py-12 text-center text-stone-500">
                                 <svg class="w-12 h-12 mx-auto text-stone-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                 <p class="font-medium">No room types found</p>
                                 <p class="text-sm mt-1">Get started by adding a new room type.</p>

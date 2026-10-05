@@ -87,9 +87,25 @@
                             <p class="mt-1 text-stone-900">{{ $booking->num_guests }} person(s)</p>
                         </div>
                         <div>
+                            <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Booking Type</p>
+                            <p class="mt-1 text-stone-900">{{ $booking->booking_type ? \App\Enums\BookingType::from($booking->booking_type)->label() : 'Umum' }}</p>
+                        </div>
+                        <div>
                             <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Created By</p>
                             <p class="mt-1 text-stone-900">{{ $booking->creator->name ?? 'System' }}</p>
                         </div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-stone-100 grid grid-cols-2 gap-3 text-sm">
+                        @if($booking->is_day_use)
+                            <div class="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-blue-700">Day Use / Ballroom</div>
+                        @endif
+                        @if($booking->is_early_check_out)
+                            <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-amber-700">Early Check-out</div>
+                        @endif
+                        @if($booking->is_bill_merged)
+                            <div class="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-emerald-700">Merged Bill</div>
+                        @endif
                     </div>
 
                     @if($booking->actual_check_in || $booking->actual_check_out)
@@ -133,7 +149,19 @@
                         </div>
                         <div>
                             <p class="text-xs text-stone-500">Identity</p>
-                            <p class="text-sm text-stone-900">{{ $booking->guest->identity_type->label() }} - {{ $booking->guest->identity_number }}</p>
+                            <p class="text-sm text-stone-900">
+                            @if($booking->guest->identity_type)
+                                {{ $booking->guest->identity_type->label() }}
+                            @endif
+                            @if($booking->guest->identity_number)
+                                @if($booking->guest->identity_type)
+                                    -
+                                @endif
+                                {{ $booking->guest->identity_number }}
+                            @elseif(! $booking->guest->identity_type)
+                                —
+                            @endif
+                        </p>
                         </div>
                         <div>
                             <p class="text-xs text-stone-500">Contact</p>
@@ -144,22 +172,19 @@
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden p-6">
-                    <h3 class="font-semibold text-stone-900 mb-4">Room Information</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-xs text-stone-500">Room Number</p>
-                            <p class="font-medium text-stone-900">
-                                <a href="{{ route('rooms.show', $booking->room) }}" class="text-primary-700 hover:underline">Room {{ $booking->room->room_number }}</a>
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-stone-500">Type</p>
-                            <p class="text-sm text-stone-900">{{ $booking->room->roomType->name }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-stone-500">Current Status</p>
-                            <p class="text-sm text-stone-900">{{ $booking->room->status->label() }}</p>
-                        </div>
+                    <h3 class="font-semibold text-stone-900 mb-4">Kamar / Ballroom yang Dipilih</h3>
+                    <div class="space-y-4">
+                        @foreach($selectedRooms as $room)
+                            <div class="border-b border-stone-100 pb-3 last:border-0 last:pb-0">
+                                <p class="font-medium text-stone-900">
+                                    <a href="{{ route('rooms.show', $room) }}" class="text-primary-700 hover:underline">
+                                        {{ $room->roomType->category === 'ballroom' ? 'Ballroom' : 'Kamar' }} {{ $room->room_number }}
+                                    </a>
+                                </p>
+                                <p class="text-sm text-stone-600">{{ $room->roomType->name }}</p>
+                                <p class="text-xs text-stone-500">Status: {{ $room->status->label() }}</p>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -168,9 +193,16 @@
         {{-- Payment Summary --}}
         <div class="lg:col-span-1 space-y-6">
             @php
-                $totalPaid = (float) $booking->payments()->sum('amount');
+                $totalPaid = $booking->totalPaid();
                 $outstanding = max((float) $booking->grand_total - $totalPaid, 0);
             @endphp
+
+            @if($booking->billingGroup)
+                <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                    Booking ini tergabung dalam tagihan <a class="font-semibold underline" href="{{ route('billing-groups.show', $booking->billingGroup) }}">{{ $booking->billingGroup->invoice_number }}</a>.
+                    Pembayaran dicatat satu kali dari halaman tagihan gabungan oleh {{ $booking->billingGroup->payerGuest->full_name }}.
+                </div>
+            @endif
 
             <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-stone-200">
@@ -205,10 +237,30 @@
                         </div>
                         @endif
 
-                        @if($booking->additional_charge > 0)
+                        @if(! empty($booking->additional_charge_breakdown))
+                            @foreach($booking->additional_charge_breakdown as $charge)
+                                <div class="flex justify-between text-stone-600">
+                                    <span>{{ $charge['name'] }}</span>
+                                    <span>+ Rp {{ number_format($charge['amount'], 0, ',', '.') }}</span>
+                                </div>
+                            @endforeach
+                        @elseif($booking->additional_charge > 0)
+                            <div class="flex justify-between text-stone-600">
+                                <span>Additional Charges</span>
+                                <span>+ Rp {{ number_format($booking->additional_charge, 0, ',', '.') }}</span>
+                            </div>
+                        @endif
+                        @if(! empty($booking->additional_charge_breakdown) && $booking->additional_charge > 0)
+                            <div class="flex justify-between border-t border-stone-100 pt-2 font-medium text-stone-700">
+                                <span>Total Biaya Tambahan</span>
+                                <span>Rp {{ number_format($booking->additional_charge, 0, ',', '.') }}</span>
+                            </div>
+                        @endif
+
+                        @if($booking->ballroom_amount > 0)
                         <div class="flex justify-between text-stone-600">
-                            <span>Additional Charges</span>
-                            <span>+ Rp {{ number_format($booking->additional_charge, 0, ',', '.') }}</span>
+                            <span>Ballroom / Day Use</span>
+                            <span>+ Rp {{ number_format($booking->ballroom_amount, 0, ',', '.') }}</span>
                         </div>
                         @endif
 
@@ -237,7 +289,11 @@
                     <h3 class="font-semibold text-stone-900">Payment</h3>
                 </div>
                 <div class="p-6">
-                    @if($outstanding > 0)
+                    @if($booking->billingGroup)
+                        <a href="{{ route('billing-groups.show', $booking->billingGroup) }}" class="inline-flex w-full items-center justify-center rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-600">
+                            Buka Tagihan Gabungan
+                        </a>
+                    @elseif($outstanding > 0)
                         <form method="POST" action="{{ route('bookings.payments.store', $booking) }}" class="space-y-4">
                             @csrf
 

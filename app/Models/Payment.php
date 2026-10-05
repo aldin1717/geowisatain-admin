@@ -10,7 +10,7 @@ use App\Enums\PaymentStatus;
 class Payment extends Model
 {
     protected $fillable = [
-        'payment_number', 'booking_id', 'payment_date', 'amount',
+        'payment_number', 'booking_id', 'billing_group_id', 'payment_date', 'amount',
         'payment_method', 'payment_status', 'notes', 'created_by'
     ];
 
@@ -24,6 +24,11 @@ class Payment extends Model
     public function booking()
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function billingGroup()
+    {
+        return $this->belongsTo(BillingGroup::class);
     }
 
     public function creator()

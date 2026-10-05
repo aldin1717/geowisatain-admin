@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Booking;
 use App\Enums\BookingStatus;
 use App\Enums\RoomStatus;
+use App\Models\Room;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -16,18 +17,24 @@ class CheckInService
             throw new \Exception('Only confirmed bookings can be checked in.');
         }
 
-        if (in_array($booking->room->status, [RoomStatus::Occupied, RoomStatus::Maintenance, RoomStatus::OutOfService])) {
-            throw new \Exception('Room is not available for check-in.');
+        $selectedRoomIds = $booking->selectedRoomIds();
+        $rooms = Room::whereIn('id', $selectedRoomIds)->get();
+        if ($rooms->count() !== count($selectedRoomIds)) {
+            throw new \Exception('One or more selected rooms or ballrooms no longer exist.');
         }
 
-        return DB::transaction(function () use ($booking) {
+        if ($rooms->contains(fn ($room) => in_array($room->status, [RoomStatus::Occupied, RoomStatus::Maintenance, RoomStatus::OutOfService]))) {
+            throw new \Exception('One or more selected rooms or ballrooms are not available for check-in.');
+        }
+
+        return DB::transaction(function () use ($booking, $rooms) {
             $booking->update([
                 'booking_status' => BookingStatus::CheckedIn,
                 'actual_check_in' => Carbon::now(),
                 'checked_in_by' => auth()->id()
             ]);
 
-            $booking->room->update([
+            $rooms->each->update([
                 'status' => RoomStatus::Occupied
             ]);
 

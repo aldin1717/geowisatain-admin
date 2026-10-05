@@ -17,41 +17,119 @@
             @csrf
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {{-- Guest --}}
-                <div class="md:col-span-2">
-                    <label for="guest_id" class="block text-sm font-medium text-stone-700 mb-1.5">Guest <span class="text-red-500">*</span></label>
-                    <select name="guest_id" id="guest_id" required
+                <div class="md:col-span-2 pt-2">
+                    <h3 class="text-lg font-medium text-stone-900">Guest Information</h3>
+                    <p class="mt-1 text-sm text-stone-500">Guest records are created or updated from this booking.</p>
+                </div>
+
+                <div>
+                    <label for="guest_full_name" class="block text-sm font-medium text-stone-700 mb-1.5">Full Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="guest_full_name" id="guest_full_name" value="{{ old('guest_full_name') }}" required
                         class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                        <option value="">— Select Guest —</option>
-                        @foreach($guests as $guest)
-                            <option value="{{ $guest->id }}" @selected(old('guest_id') == $guest->id)>
-                                {{ $guest->full_name }} ({{ $guest->identity_number }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('guest_id')
+                    @error('guest_full_name')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                {{-- Room --}}
-                <div class="md:col-span-2">
-                    <label for="room_id" class="block text-sm font-medium text-stone-700 mb-1.5">Room <span class="text-red-500">*</span></label>
-                    <select name="room_id" id="room_id" required x-ref="roomSelect" x-on:change="updateRoomDetails"
+                <div>
+                    <label for="guest_phone" class="block text-sm font-medium text-stone-700 mb-1.5">Phone <span class="text-red-500">*</span></label>
+                    <input type="tel" name="guest_phone" id="guest_phone" value="{{ old('guest_phone') }}" required
                         class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                        <option value="">— Select Room —</option>
-                        @foreach($rooms as $room)
-                            <option value="{{ $room->id }}" 
-                                data-price="{{ (int)$room->price_per_night }}"
-                                data-capacity="{{ $room->capacity }}"
-                                @selected(old('room_id') == $room->id)>
-                                Room {{ $room->room_number }} - {{ $room->roomType->name }} (Rp {{ number_format($room->price_per_night, 0, ',', '.') }}/night)
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('room_id')
+                    @error('guest_phone')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                     @enderror
+                </div>
+
+                <div>
+                    <label for="guest_email" class="block text-sm font-medium text-stone-700 mb-1.5">Email <span class="text-red-500">*</span></label>
+                    <input type="email" name="guest_email" id="guest_email" value="{{ old('guest_email') }}" required
+                        class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    @error('guest_email')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="guest_address" class="block text-sm font-medium text-stone-700 mb-1.5">Address <span class="text-stone-400">(optional)</span></label>
+                    <textarea name="guest_address" id="guest_address" rows="2"
+                        class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">{{ old('guest_address') }}</textarea>
+                    @error('guest_address')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Booking Type --}}
+                <div>
+                    <label for="booking_type" class="block text-sm font-medium text-stone-700 mb-1.5">Booking Type</label>
+                    <select name="booking_type" id="booking_type" class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        @foreach(\App\Enums\BookingType::cases() as $type)
+                            <option value="{{ $type->value }}" @selected(old('booking_type', 'general') === $type->value)>{{ $type->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="flex items-center gap-2 text-sm font-medium text-stone-700">
+                        <input type="checkbox" name="is_day_use" value="1" @checked(old('is_day_use'))>
+                        Day Use / Ballroom
+                    </label>
+                </div>
+
+                {{-- Room / Ballroom Selection --}}
+                <div class="md:col-span-2">
+                    <label for="selection_type" class="block text-sm font-medium text-stone-700 mb-1.5">Pilih Kamar / Ballroom <span class="text-red-500">*</span></label>
+                    <select name="selection_type" id="selection_type" x-model="selectionType" x-on:change="syncSelectionType()"
+                        class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <option value="room" @selected(old('selection_type', 'room') === 'room')>Hanya Kamar</option>
+                        <option value="ballroom" @selected(old('selection_type') === 'ballroom')>Hanya Ballroom</option>
+                        <option value="both" @selected(old('selection_type') === 'both')>Kamar + Ballroom</option>
+                    </select>
+                    @error('room_ids')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="md:col-span-2" x-show="selectionType !== 'ballroom'">
+                    <label class="block text-sm font-medium text-stone-700 mb-1.5">Pilih Kamar</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        @forelse($hotelRooms as $room)
+                            <label class="flex items-start gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
+                                <input type="checkbox" name="room_ids[]" value="{{ $room->id }}"
+                                    data-price="{{ (int)$room->price_per_night }}"
+                                    data-capacity="{{ $room->capacity }}"
+                                    data-category="room"
+                                    @checked(in_array((string) $room->id, (array) old('room_ids', [])))
+                                    x-on:change="syncRoomSelection()">
+                                <span>
+                                    Room {{ $room->room_number }} - {{ $room->roomType->name }}
+                                    <br>
+                                    <small class="text-stone-500">Kapasitas {{ $room->capacity }} orang · Rp {{ number_format($room->price_per_night, 0, ',', '.') }}/malam</small>
+                                </span>
+                            </label>
+                        @empty
+                            <p class="text-sm text-stone-500">Belum ada kamar aktif pada data master.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="md:col-span-2" x-show="selectionType !== 'room'">
+                    <label class="block text-sm font-medium text-stone-700 mb-1.5">Pilih Ballroom</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        @forelse($ballrooms as $ballroom)
+                            <label class="flex items-start gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
+                                <input type="checkbox" name="room_ids[]" value="{{ $ballroom->id }}"
+                                    data-category="ballroom"
+                                    @checked(in_array((string) $ballroom->id, (array) old('room_ids', [])))>
+                                <span>
+                                    Ballroom {{ $ballroom->room_number }} - {{ $ballroom->roomType->name }}
+                                    <br>
+                                    <small class="text-stone-500">Kapasitas {{ $ballroom->capacity }} orang</small>
+                                </span>
+                            </label>
+                        @empty
+                            <p class="text-sm text-stone-500">Belum ada Ballroom aktif pada data master. Tambahkan tipe kategori Ballroom dan nomor Ballroom terlebih dahulu.</p>
+                        @endforelse
+                    </div>
                 </div>
 
                 {{-- Check-in Date --}}
@@ -111,14 +189,64 @@
                     @enderror
                 </div>
                 
-                {{-- Additional Charge --}}
-                <div>
-                    <label for="additional_charge" class="block text-sm font-medium text-stone-700 mb-1.5">Additional Charge (Rp)</label>
-                    <input type="number" name="additional_charge" id="additional_charge" x-model="additionalCharge" min="0" step="1"
-                        class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                    @error('additional_charge')
+                {{-- Itemized Additional Charges --}}
+                <div class="md:col-span-2">
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-sm font-medium text-stone-700">Biaya Tambahan</h4>
+                            <p class="mt-0.5 text-xs text-stone-500">Tambahkan item seperti bantal ekstra, laundry, atau layanan lainnya.</p>
+                        </div>
+                        <button type="button" x-on:click="addAdditionalCharge()" class="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50">
+                            + Tambah Item
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        <template x-for="(item, index) in additionalCharges" :key="index">
+                            <div class="grid grid-cols-1 gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3 sm:grid-cols-[minmax(0,1fr)_220px_auto]">
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium text-stone-600">Nama item</label>
+                                    <input type="text" x-model="item.name" x-bind:name="`additional_charge_breakdown[${index}][name]`" maxlength="100" placeholder="Contoh: Bantal tambahan"
+                                        class="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium text-stone-600">Nominal (Rp)</label>
+                                    <input type="number" x-model.number="item.amount" x-bind:name="`additional_charge_breakdown[${index}][amount]`" min="0.01" step="1" placeholder="0"
+                                        class="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500">
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="button" x-on:click="removeAdditionalCharge(index)" class="w-full rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 sm:w-auto" aria-label="Hapus item biaya tambahan">
+                                        Hapus
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    @error('additional_charge_breakdown')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                     @enderror
+                    @foreach($errors->get('additional_charge_breakdown.*.name') as $messages)
+                        @foreach($messages as $message)
+                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @endforeach
+                    @endforeach
+                    @foreach($errors->get('additional_charge_breakdown.*.amount') as $messages)
+                        @foreach($messages as $message)
+                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @endforeach
+                    @endforeach
+                </div>
+
+                <div>
+                    <label for="ballroom_amount" class="block text-sm font-medium text-stone-700 mb-1.5">Ballroom / Day Use (Rp)</label>
+                    <input type="number" name="ballroom_amount" id="ballroom_amount" min="0" step="1" value="{{ old('ballroom_amount', 0) }}"
+                        class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
+
+                <div>
+                    <label class="flex items-center gap-2 text-sm font-medium text-stone-700">
+                        <input type="checkbox" name="is_early_check_out" value="1" @checked(old('is_early_check_out'))>
+                        Early check-out
+                    </label>
                 </div>
 
                 {{-- Notes --}}
@@ -155,9 +283,19 @@
                             <span>Tax:</span>
                             <span>+ Rp <span x-text="formatMoney(tax)"></span></span>
                         </div>
+                        <template x-for="(item, index) in additionalCharges.filter(item => item.name && Number(item.amount) > 0)" :key="`charge-summary-${index}`">
+                            <div class="flex justify-between text-stone-600">
+                                <span x-text="item.name"></span>
+                                <span>+ Rp <span x-text="formatMoney(item.amount)"></span></span>
+                            </div>
+                        </template>
                         <div class="flex justify-between text-stone-600" x-show="additionalCharge > 0">
-                            <span>Additional Charge:</span>
+                            <span>Total Biaya Tambahan:</span>
                             <span>+ Rp <span x-text="formatMoney(additionalCharge)"></span></span>
+                        </div>
+                        <div class="flex justify-between text-stone-600" x-show="Number(document.getElementById('ballroom_amount')?.value || 0) > 0">
+                            <span>Ballroom / Day Use:</span>
+                            <span>+ Rp <span x-text="formatMoney(Number(document.getElementById('ballroom_amount')?.value || 0))"></span></span>
                         </div>
                         <div class="flex justify-between border-t border-stone-200 pt-2 mt-2 text-base font-bold text-stone-900">
                             <span>Estimated Grand Total:</span>
@@ -178,30 +316,60 @@
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('bookingForm', () => ({
+                selectionType: '{{ old('selection_type', 'room') }}',
                 checkInDate: '{{ old('check_in_date') }}',
                 checkOutDate: '{{ old('check_out_date') }}',
                 numGuests: '{{ old('num_guests', 1) }}',
                 discount: {{ old('discount', 0) }},
                 tax: {{ old('tax', 0) }},
-                additionalCharge: {{ old('additional_charge', 0) }},
-                
+                additionalCharges: @js(old('additional_charge_breakdown', [['name' => '', 'amount' => '']])),
                 roomRate: 0,
                 maxCapacity: null,
 
                 init() {
-                    this.updateRoomDetails();
+                    this.syncRoomSelection();
                 },
 
-                updateRoomDetails() {
-                    const select = this.$refs.roomSelect;
-                    if(select.selectedIndex > 0) {
-                        const option = select.options[select.selectedIndex];
-                        this.roomRate = parseInt(option.getAttribute('data-price')) || 0;
-                        this.maxCapacity = parseInt(option.getAttribute('data-capacity')) || null;
-                    } else {
-                        this.roomRate = 0;
-                        this.maxCapacity = null;
-                    }
+                syncRoomSelection() {
+                    const checkedRooms = Array.from(document.querySelectorAll('input[name="room_ids[]"]:checked'));
+                    let totalPrice = 0;
+                    let totalCapacity = 0;
+
+                    checkedRooms.forEach((room) => {
+                        if (room.dataset.category === 'room') {
+                            totalPrice += Number(room.dataset.price || 0);
+                            totalCapacity += Number(room.dataset.capacity || 0);
+                        }
+                    });
+
+                    this.roomRate = totalPrice;
+                    this.maxCapacity = totalCapacity > 0 ? totalCapacity : null;
+                },
+
+                syncSelectionType() {
+                    document.querySelectorAll('input[name="room_ids[]"]').forEach((input) => {
+                        const shouldKeep = this.selectionType === 'both'
+                            || (this.selectionType === 'room' && input.dataset.category === 'room')
+                            || (this.selectionType === 'ballroom' && input.dataset.category === 'ballroom');
+
+                        if (!shouldKeep) {
+                            input.checked = false;
+                        }
+                    });
+
+                    this.syncRoomSelection();
+                },
+
+                addAdditionalCharge() {
+                    this.additionalCharges.push({ name: '', amount: '' });
+                },
+
+                removeAdditionalCharge(index) {
+                    this.additionalCharges.splice(index, 1);
+                },
+
+                get additionalCharge() {
+                    return this.additionalCharges.reduce((total, item) => total + (Number(item.amount) || 0), 0);
                 },
 
                 get numNights() {
@@ -215,7 +383,8 @@
 
                 get grandTotal() {
                     const subtotal = this.roomRate * this.numNights;
-                    return subtotal - (Number(this.discount) || 0) + (Number(this.tax) || 0) + (Number(this.additionalCharge) || 0);
+                    const ballroomAmount = Number(document.getElementById('ballroom_amount')?.value || 0);
+                    return subtotal - (Number(this.discount) || 0) + (Number(this.tax) || 0) + (Number(this.additionalCharge) || 0) + ballroomAmount;
                 },
 
                 formatMoney(amount) {

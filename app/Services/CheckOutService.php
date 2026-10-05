@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Enums\BookingStatus;
 use App\Enums\RoomStatus;
 use App\Enums\PaymentStatus;
+use App\Models\Room;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -17,18 +18,24 @@ class CheckOutService
             throw new \Exception('Only checked-in bookings can be checked out.');
         }
 
-        if ($booking->payment_status !== PaymentStatus::Paid) {
-            throw new \Exception('Cannot check-out without full payment.');
+        if ($booking->payment_status === PaymentStatus::Unpaid || $booking->payment_status === PaymentStatus::Partial) {
+            throw new \Exception('Cannot check-out before payment is completed.');
         }
 
-        return DB::transaction(function () use ($booking) {
+        $selectedRoomIds = $booking->selectedRoomIds();
+        $rooms = Room::whereIn('id', $selectedRoomIds)->get();
+        if ($rooms->count() !== count($selectedRoomIds)) {
+            throw new \Exception('One or more selected rooms or ballrooms no longer exist.');
+        }
+
+        return DB::transaction(function () use ($booking, $rooms) {
             $booking->update([
                 'booking_status' => BookingStatus::CheckedOut,
                 'actual_check_out' => Carbon::now(),
                 'checked_out_by' => auth()->id()
             ]);
 
-            $booking->room->update([
+            $rooms->each->update([
                 'status' => RoomStatus::Cleaning
             ]);
 

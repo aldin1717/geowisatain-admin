@@ -33,4 +33,9 @@ class Room extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+    public function bookingsThroughSelection()
+    {
+        return $this->belongsToMany(Booking::class);
+    }
 }

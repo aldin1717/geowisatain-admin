@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
 use App\Models\Booking;
-use App\Models\Guest;
 use App\Models\Room;
 use App\Services\BookingService;
 use App\Services\CheckInService;
@@ -24,13 +23,15 @@ class BookingController extends Controller
 
     public function index(Request $request)
     {
-        $query = Booking::with(['guest', 'room.roomType']);
+        $query = Booking::with(['guest', 'room.roomType', 'rooms.roomType']);
 
         if ($search = $request->input('search')) {
-            $query->where('booking_number', 'like', "%{$search}%")
-                  ->orWhereHas('guest', function ($q) use ($search) {
-                      $q->where('full_name', 'like', "%{$search}%");
+            $query->where(function ($bookings) use ($search) {
+                $bookings->where('booking_number', 'like', "%{$search}%")
+                  ->orWhereHas('guest', function ($guests) use ($search) {
+                      $guests->where('full_name', 'like', "%{$search}%");
                   });
+            });
         }
 
         if ($status = $request->input('status')) {
@@ -46,17 +47,18 @@ class BookingController extends Controller
 
     public function create()
     {
-        $guests = Guest::orderBy('full_name')->get();
-        // Only fetch active rooms
         $rooms = Room::with('roomType')->where('is_active', true)->orderBy('room_number')->get();
-        
-        return view('bookings.create', compact('guests', 'rooms'));
+        $hotelRooms = $rooms->filter(fn (Room $room) => $room->roomType->category === 'room')->values();
+        $ballrooms = $rooms->filter(fn (Room $room) => $room->roomType->category === 'ballroom')->values();
+
+        return view('bookings.create', compact('hotelRooms', 'ballrooms'));
     }
 
     public function store(StoreBookingRequest $request)
     {
         try {
             $booking = $this->bookingService->createBooking($request->validated());
+
             return redirect()->route('bookings.show', $booking)
                 ->with('success', 'Booking created successfully.');
         } catch (\Exception $e) {
@@ -66,8 +68,12 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $booking->load(['guest', 'room.roomType', 'creator', 'checkedInBy', 'checkedOutBy', 'payments' => fn ($query) => $query->latest()]);
-        return view('bookings.show', compact('booking'));
+        $booking->load(['guest', 'room.roomType', 'creator', 'checkedInBy', 'checkedOutBy', 'billingGroup.payerGuest', 'payments' => fn ($query) => $query->latest()]);
+        $selectedRoomIds = $booking->selectedRoomIds();
+        $selectedRooms = Room::with('roomType')->whereIn('id', $selectedRoomIds)->get()
+            ->sortBy(fn (Room $room) => array_search($room->id, $selectedRoomIds));
+
+        return view('bookings.show', compact('booking', 'selectedRooms'));
     }
 
     public function edit(Booking $booking)
@@ -87,16 +93,29 @@ class BookingController extends Controller
     {
         try {
             $this->checkInService->process($booking);
-            return back()->with('success', 'Check-in processed successfully.');
+
+            return redirect()->route('bookings.check-in.receipt', $booking)
+                ->with('success', 'Check-in processed successfully.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    public function printCheckInReceipt(Booking $booking)
+    {
+        $booking->load(['guest', 'room.roomType']);
+        $selectedRoomIds = $booking->selectedRoomIds();
+        $selectedRooms = Room::with('roomType')->whereIn('id', $selectedRoomIds)->get()
+            ->sortBy(fn (Room $room) => array_search($room->id, $selectedRoomIds));
+
+        return view('bookings.receipt', compact('booking', 'selectedRooms'));
     }
 
     public function checkOut(Booking $booking)
     {
         try {
             $this->checkOutService->process($booking);
+
             return back()->with('success', 'Check-out processed successfully.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -105,11 +124,15 @@ class BookingController extends Controller
 
     public function recordPayment(Request $request, Booking $booking)
     {
-        $totalPaid = (float) $booking->payments()->sum('amount');
-        $remaining = max((float) $booking->grand_total - $totalPaid, 0);
+        if ($booking->billing_group_id) {
+            return redirect()->route('billing-groups.show', $booking->billing_group_id)
+                ->with('error', 'This booking belongs to a merged bill. Record payment from the merged bill page.');
+        }
+
+        $remaining = max((float) $booking->grand_total - $booking->totalPaid(), 0);
 
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:' . $remaining],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.$remaining],
             'payment_method' => ['required', 'in:cash,transfer,debit_card,credit_card,other'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);

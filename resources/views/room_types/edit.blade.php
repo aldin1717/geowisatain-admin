@@ -15,7 +15,7 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-        <form method="POST" action="{{ route('room-types.update', $roomType) }}" enctype="multipart/form-data" class="p-6 sm:p-8">
+        <form method="POST" action="{{ route('room-types.update', $roomType) }}" class="p-6 sm:p-8">
             @csrf
             @method('PUT')
             @include('room_types._form', ['roomType' => $roomType])

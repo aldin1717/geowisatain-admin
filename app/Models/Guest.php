@@ -21,4 +21,9 @@ class Guest extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+    public function billingGroups()
+    {
+        return $this->hasMany(BillingGroup::class, 'payer_guest_id');
+    }
 }

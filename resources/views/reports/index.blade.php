@@ -48,6 +48,21 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div class="rounded-lg border border-stone-200 bg-white p-4">
+            <p class="text-xs uppercase tracking-wide text-stone-500">Hari ini</p>
+            <p class="mt-2 text-xl font-semibold text-stone-900">Rp {{ number_format($summary['day'], 0, ',', '.') }}</p>
+        </div>
+        <div class="rounded-lg border border-stone-200 bg-white p-4">
+            <p class="text-xs uppercase tracking-wide text-stone-500">Minggu ini</p>
+            <p class="mt-2 text-xl font-semibold text-stone-900">Rp {{ number_format($summary['week'], 0, ',', '.') }}</p>
+        </div>
+        <div class="rounded-lg border border-stone-200 bg-white p-4">
+            <p class="text-xs uppercase tracking-wide text-stone-500">Bulan ini</p>
+            <p class="mt-2 text-xl font-semibold text-stone-900">Rp {{ number_format($summary['month'], 0, ',', '.') }}</p>
+        </div>
+    </div>
+
     <section class="overflow-hidden rounded-lg border border-stone-200 bg-white">
         <div class="border-b border-stone-200 px-5 py-4">
             <h2 class="font-semibold text-stone-900">Income by Day</h2>
@@ -89,8 +104,8 @@
                             <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">{{ $payment->payment_date->format('d M Y, H:i') }}</td>
                             <td class="whitespace-nowrap px-5 py-3 text-sm font-medium text-primary-700">{{ $payment->payment_number }}</td>
                             <td class="px-5 py-3 text-sm">
-                                <p class="font-medium text-stone-800">{{ $payment->booking?->booking_number ?? 'Booking deleted' }}</p>
-                                <p class="text-stone-500">{{ $payment->booking?->guest?->full_name ?? '-' }}</p>
+                                <p class="font-medium text-stone-800">{{ $payment->billingGroup?->invoice_number ?? $payment->booking?->booking_number ?? 'Booking deleted' }}</p>
+                                <p class="text-stone-500">{{ $payment->billingGroup?->payerGuest?->full_name ?? $payment->booking?->guest?->full_name ?? '-' }}</p>
                             </td>
                             <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">{{ $payment->payment_method->label() }}</td>
                             <td class="whitespace-nowrap px-5 py-3 text-right text-sm font-medium text-stone-900">Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>

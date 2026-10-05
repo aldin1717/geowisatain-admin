@@ -17,7 +17,10 @@ class RoomAvailabilityService
             return false;
         }
 
-        $query = Booking::where('room_id', $roomId)
+        $query = Booking::where(function ($bookingQuery) use ($roomId) {
+            $bookingQuery->where('room_id', $roomId)
+                ->orWhereHas('rooms', fn ($rooms) => $rooms->where('rooms.id', $roomId));
+        })
             ->whereIn('booking_status', [BookingStatus::Confirmed, BookingStatus::CheckedIn])
             ->where(function ($q) use ($checkIn, $checkOut) {
                 $q->whereBetween('check_in_date', [$checkIn, $checkOut])

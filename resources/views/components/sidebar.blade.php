@@ -42,6 +42,10 @@
                     <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     <span>Bookings</span>
                 </a>
+                <a href="{{ route('billing-groups.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request()->routeIs('billing-groups.*') ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4m-7-7h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2zm2 0V3h4v2"></path></svg>
+                    <span>Tagihan Gabungan</span>
+                </a>
                 <a href="{{ route('bookings.index', ['status' => 'confirmed']) }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request('status') === 'confirmed' ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
                     <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
                     <span>Check-in</span>
@@ -74,21 +78,33 @@
         <div>
             <p class="px-3 text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">Inventory</p>
             <div class="space-y-1">
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 hover:text-white transition-colors">
+                <a href="{{ route('inventory.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request()->routeIs('inventory.index', 'inventory.items.*') ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
                     <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                     <span>Items</span>
                 </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 hover:text-white transition-colors">
+                <a href="{{ route('inventory.categories.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request()->routeIs('inventory.categories.*') ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
                     <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                     <span>Categories</span>
                 </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 hover:text-white transition-colors">
+                <a href="{{ route('inventory.transactions.create', ['type' => 'stock_in']) }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request('type') === 'stock_in' && request()->routeIs('inventory.transactions.*') ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
                     <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z"></path></svg>
                     <span>Stock In</span>
                 </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 hover:text-white transition-colors">
+                <a href="{{ route('inventory.transactions.create', ['type' => 'stock_out']) }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request('type') === 'stock_out' && request()->routeIs('inventory.transactions.*') ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
                     <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z"></path></svg>
                     <span>Stock Out</span>
+                </a>
+                <a href="{{ route('inventory.transactions.create', ['type' => 'adjustment']) }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request('type') === 'adjustment' && request()->routeIs('inventory.transactions.*') ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19a8 8 0 0013.7-3M19 5a8 8 0 00-13.7 3"></path></svg>
+                    <span>Stock Adjustment</span>
+                </a>
+                <a href="{{ route('inventory.transactions.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request()->routeIs('inventory.transactions.index') ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h6m-6 4h6m-6 4h6m-6 4h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path></svg>
+                    <span>Transactions</span>
+                </a>
+                <a href="{{ route('inventory.index', ['low_stock' => 1]) }}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {{ request('low_stock') ? 'bg-primary-500 text-white shadow-sm' : 'hover:bg-slate-700 hover:text-white' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.3 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.7 3.86a2 2 0 00-3.4 0z"></path></svg>
+                    <span>Low Stock</span>
                 </a>
             </div>
         </div>

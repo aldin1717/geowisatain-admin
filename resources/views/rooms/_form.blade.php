@@ -2,7 +2,7 @@
     $room = $room ?? null;
 @endphp
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6" x-data="roomForm()">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
     {{-- Room Number --}}
     <div>
         <label for="room_number" class="block text-sm font-medium text-stone-700 mb-1.5">Room Number <span class="text-red-500">*</span></label>
@@ -17,14 +17,11 @@
     {{-- Room Type --}}
     <div>
         <label for="room_type_id" class="block text-sm font-medium text-stone-700 mb-1.5">Room Type <span class="text-red-500">*</span></label>
-        <select name="room_type_id" id="room_type_id" required x-on:change="updateDefaults" x-ref="typeSelect"
+        <select name="room_type_id" id="room_type_id" required
             class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
             <option value="">— Select Type —</option>
             @foreach($roomTypes as $type)
-                <option value="{{ $type->id }}" 
-                    data-capacity="{{ $type->capacity }}"
-                    data-price="{{ (int)$type->base_price }}"
-                    @selected(old('room_type_id', $room?->room_type_id) == $type->id)>
+                <option value="{{ $type->id }}" @selected(old('room_type_id', $room?->room_type_id) == $type->id)>
                     {{ $type->name }}
                 </option>
             @endforeach
@@ -64,10 +61,9 @@
     {{-- Capacity --}}
     <div>
         <label for="capacity" class="block text-sm font-medium text-stone-700 mb-1.5">Capacity (Persons) <span class="text-red-500">*</span></label>
-        <input type="number" name="capacity" id="capacity" x-ref="capacityInput"
+        <input type="number" name="capacity" id="capacity"
             value="{{ old('capacity', $room?->capacity) }}" required min="1"
             class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-        <p class="mt-1 text-xs text-stone-500">Leave unchanged to use Room Type's default capacity.</p>
         @error('capacity')
             <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
         @enderror
@@ -76,10 +72,9 @@
     {{-- Price Per Night --}}
     <div>
         <label for="price_per_night" class="block text-sm font-medium text-stone-700 mb-1.5">Price / Night (Rp) <span class="text-red-500">*</span></label>
-        <input type="number" name="price_per_night" id="price_per_night" x-ref="priceInput"
+        <input type="number" name="price_per_night" id="price_per_night"
             value="{{ old('price_per_night', $room ? (int)$room->price_per_night : '') }}" required min="0" step="1"
             class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-        <p class="mt-1 text-xs text-stone-500">Leave unchanged to use Room Type's base price.</p>
         @error('price_per_night')
             <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
         @enderror
@@ -106,7 +101,7 @@
         @endif
         <input type="file" name="image" id="image" accept="image/*"
             class="block w-full text-sm text-stone-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-stone-50 file:text-stone-700 hover:file:bg-stone-100 border border-stone-300 rounded-lg">
-        <p class="mt-1 text-xs text-stone-500">Optional. If not provided, it will fallback to the Room Type's image.</p>
+        <p class="mt-1 text-xs text-stone-500">Optional image for this room.</p>
         @error('image')
             <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
         @enderror
@@ -125,29 +120,3 @@
         @enderror
     </div>
 </div>
-
-<script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('roomForm', () => ({
-        isEditMode: {{ $room ? 'true' : 'false' }},
-        updateDefaults() {
-            if (this.isEditMode) return; // don't auto-update if editing existing
-            
-            const select = this.$refs.typeSelect;
-            const option = select.options[select.selectedIndex];
-            
-            if (option.value) {
-                const capacity = option.getAttribute('data-capacity');
-                const price = option.getAttribute('data-price');
-                
-                if (this.$refs.capacityInput.value === '') {
-                    this.$refs.capacityInput.value = capacity;
-                }
-                if (this.$refs.priceInput.value === '') {
-                    this.$refs.priceInput.value = price;
-                }
-            }
-        }
-    }))
-})
-</script>

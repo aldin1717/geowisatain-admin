@@ -6,12 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class RoomType extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'base_price', 'capacity', 'image', 'is_active'];
-
-    protected $casts = [
-        'base_price' => 'decimal:2',
-        'is_active' => 'boolean',
-    ];
+    protected $fillable = ['name', 'category', 'slug', 'description'];
 
     public function rooms()
     {

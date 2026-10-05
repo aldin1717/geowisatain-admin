@@ -27,14 +27,15 @@ class RoomController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $roomTypes = RoomType::where('is_active', true)->get();
+        $roomTypes = RoomType::orderBy('name')->get();
 
         return view('rooms.index', compact('rooms', 'roomTypes'));
     }
 
     public function create()
     {
-        $roomTypes = RoomType::where('is_active', true)->get();
+        $roomTypes = RoomType::orderBy('name')->get();
+
         return view('rooms.create', compact('roomTypes'));
     }
 
@@ -55,12 +56,14 @@ class RoomController extends Controller
     public function show(Room $room)
     {
         $room->load('roomType', 'bookings');
+
         return view('rooms.show', compact('room'));
     }
 
     public function edit(Room $room)
     {
-        $roomTypes = RoomType::where('is_active', true)->get();
+        $roomTypes = RoomType::orderBy('name')->get();
+
         return view('rooms.edit', compact('room', 'roomTypes'));
     }
 
@@ -83,7 +86,8 @@ class RoomController extends Controller
 
     public function destroy(Room $room)
     {
-        if ($room->bookings()->whereIn('booking_status', ['confirmed', 'checked_in'])->exists()) {
+        if ($room->bookings()->whereIn('booking_status', ['confirmed', 'checked_in'])->exists()
+            || $room->bookingsThroughSelection()->whereIn('booking_status', ['confirmed', 'checked_in'])->exists()) {
             return back()->with('error', 'Cannot delete room with active bookings.');
         }
 

@@ -13,7 +13,7 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-        <form method="POST" action="{{ route('room-types.store') }}" enctype="multipart/form-data" class="p-6 sm:p-8">
+        <form method="POST" action="{{ route('room-types.store') }}" class="p-6 sm:p-8">
             @csrf
             @include('room_types._form')
 

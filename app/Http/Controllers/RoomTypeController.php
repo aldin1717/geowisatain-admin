@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateRoomTypeRequest;
 use App\Models\RoomType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 
 class RoomTypeController extends Controller
 {
@@ -37,10 +36,6 @@ class RoomTypeController extends Controller
         $data = $request->validated();
         $data['slug'] = Str::slug($data['name']);
 
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('room_types', 'public');
-        }
-
         RoomType::create($data);
 
         return redirect()->route('room-types.index')
@@ -50,6 +45,7 @@ class RoomTypeController extends Controller
     public function show(RoomType $roomType)
     {
         $roomType->load('rooms');
+
         return view('room_types.show', compact('roomType'));
     }
 
@@ -61,16 +57,14 @@ class RoomTypeController extends Controller
     public function update(UpdateRoomTypeRequest $request, RoomType $roomType)
     {
         $data = $request->validated();
-        
-        if ($data['name'] !== $roomType->name) {
-            $data['slug'] = Str::slug($data['name']);
+
+        if ($data['category'] !== $roomType->category && $roomType->rooms()->exists()) {
+            return back()->withInput()
+                ->with('error', 'Cannot change the category while rooms are assigned to this type.');
         }
 
-        if ($request->hasFile('image')) {
-            if ($roomType->image) {
-                Storage::disk('public')->delete($roomType->image);
-            }
-            $data['image'] = $request->file('image')->store('room_types', 'public');
+        if ($data['name'] !== $roomType->name) {
+            $data['slug'] = Str::slug($data['name']);
         }
 
         $roomType->update($data);
@@ -83,10 +77,6 @@ class RoomTypeController extends Controller
     {
         if ($roomType->rooms()->exists()) {
             return back()->with('error', 'Cannot delete room type because it has associated rooms.');
-        }
-
-        if ($roomType->image) {
-            Storage::disk('public')->delete($roomType->image);
         }
 
         $roomType->delete();

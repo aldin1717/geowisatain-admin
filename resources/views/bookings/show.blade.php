@@ -88,7 +88,7 @@
                         </div>
                         <div>
                             <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Booking Type</p>
-                            <p class="mt-1 text-stone-900">{{ $booking->booking_type ? \App\Enums\BookingType::from($booking->booking_type)->label() : 'Umum' }}</p>
+                            <p class="mt-1 text-stone-900">{{ $booking->booking_type ? $booking->booking_type->label() : 'Umum' }}</p>
                         </div>
                         <div>
                             <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Created By</p>

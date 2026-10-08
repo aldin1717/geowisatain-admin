@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'Geowisata Inn') }} - Login</title>
+    <title>{{ config('app.name', 'GeowisataInn') }} - Login</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased text-stone-900 bg-[#fffaf5]">
@@ -19,7 +19,7 @@
         <div class="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center bg-gradient-to-br from-[#f8d4a7] via-[#eea861] to-[#d97839]">
             <div class="absolute inset-0 bg-gradient-to-br from-[#f7d7b3]/70 via-[#eea861]/70 to-[#d8742c]/80"></div>
             <div class="relative z-10 text-center px-12 text-white max-w-xl">
-                <h1 class="text-4xl font-semibold mb-4 tracking-tight">Geowisata Inn</h1>
+                <h1 class="text-4xl font-semibold mb-4 tracking-tight">{{ config('app.name', 'GeowisataInn') }}</h1>
                 <p class="text-white/80 text-lg leading-relaxed">Manage reservations, inventory, and daily operations with a more comfortable hospitality workflow.</p>
             </div>
 

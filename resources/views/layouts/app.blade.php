@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-    <title>{{ config('app.name', 'Geowisata Inn') }} - @yield('title', 'Dashboard')</title>
+    <title>{{ config('app.name', 'GeowisataInn') }} - @yield('title', 'Dashboard')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased text-slate-800 bg-[#f8f9fa]" x-data="{ sidebarOpen: false }">
@@ -23,7 +23,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <span class="ml-4 font-semibold text-lg text-primary-700">{{ config('app.name', 'Geowisata Inn') }}</span>
+                    <span class="ml-4 font-semibold text-lg text-primary-700">{{ config('app.name', 'GeowisataInn') }}</span>
                 </div>
                 
                 <div class="hidden lg:flex items-center text-lg font-medium text-slate-800">

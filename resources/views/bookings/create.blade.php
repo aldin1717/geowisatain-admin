@@ -330,13 +330,6 @@
                         class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
-                <div>
-                    <label class="flex items-center gap-2 text-sm font-medium text-stone-700">
-                        <input type="checkbox" name="is_early_check_out" value="1" @checked(old('is_early_check_out'))>
-                        Early check-out
-                    </label>
-                </div>
-
                 {{-- Notes --}}
                 <div class="md:col-span-2">
                     <label for="notes" class="block text-sm font-medium text-stone-700 mb-1.5">Notes</label>

@@ -112,7 +112,6 @@ class BookingService
                 'payment_status' => $grandTotal <= 0 ? PaymentStatus::Paid : PaymentStatus::Unpaid,
                 'booking_type' => $bookingType,
                 'is_day_use' => $isDayUse,
-                'is_early_check_out' => (bool) ($data['is_early_check_out'] ?? false),
                 'is_bill_merged' => $isBillMerged,
                 'additional_charge_breakdown' => $additionalChargeBreakdown,
                 'notes' => $data['notes'] ?? null,

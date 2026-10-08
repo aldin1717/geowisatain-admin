@@ -3,21 +3,24 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <p class="text-sm font-medium text-primary-700">{{ now()->format('l, d F Y') }}</p>
-            <h1 class="mt-1 text-2xl font-semibold tracking-tight text-stone-900">Welcome back, {{ $user->name }}!</h1>
+    <div class="mb-8 flex flex-col gap-5 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div class="min-w-0">
+            <p class="inline-flex items-center gap-2 text-sm font-medium text-primary-700">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                {{ now()->format('l, d F Y') }}
+            </p>
+            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">Welcome back, {{ $user->name }}!</h1>
             <p class="mt-1 text-sm text-stone-500">Here is today's overview for {{ config('app.name', 'Geowisata Inn') }}.</p>
         </div>
-        <div class="flex flex-wrap gap-3">
+        <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
             @if($canManageHotel)
-                <a href="{{ route('bookings.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700">
+                <a href="{{ route('bookings.create') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     New booking
                 </a>
             @endif
             @if($canManageInventory)
-                <a href="{{ route('inventory.transactions.create', ['type' => 'stock_in']) }}" class="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:bg-stone-50">
+                <a href="{{ route('inventory.transactions.create', ['type' => 'stock_in']) }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Receive stock
                 </a>
@@ -25,9 +28,9 @@
         </div>
     </div>
 
-    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 {{ $canManageHotel && $canManageInventory ? 'xl:grid-cols-4' : ($canManageHotel ? 'xl:grid-cols-3' : 'xl:grid-cols-1') }}">
+    <div class="mb-8 grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 {{ $canManageHotel && $canManageInventory ? 'xl:grid-cols-4' : ($canManageHotel ? 'xl:grid-cols-3' : 'xl:grid-cols-1') }}">
         @if($canManageHotel)
-            <a href="{{ route('bookings.index', ['status' => 'confirmed', 'check_in_date' => today()->toDateString()]) }}" class="group rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <a href="{{ route('bookings.index', ['status' => 'confirmed', 'check_in_date' => today()->toDateString()]) }}" class="group flex min-h-36 flex-col rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-stone-500">Arrivals today</p>
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
@@ -35,9 +38,9 @@
                     </span>
                 </div>
                 <p class="mt-4 text-3xl font-semibold tracking-tight text-stone-900">{{ $todayArrivals }}</p>
-                <p class="mt-1 text-xs text-stone-500">Confirmed bookings scheduled for today</p>
+                <p class="mt-1 text-xs leading-5 text-stone-500">Confirmed bookings scheduled for today</p>
             </a>
-            <a href="{{ route('bookings.index', ['status' => 'checked_in', 'check_out_date' => today()->toDateString()]) }}" class="group rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <a href="{{ route('bookings.index', ['status' => 'checked_in', 'check_out_date' => today()->toDateString()]) }}" class="group flex min-h-36 flex-col rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-stone-500">Departures today</p>
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
@@ -45,9 +48,9 @@
                     </span>
                 </div>
                 <p class="mt-4 text-3xl font-semibold tracking-tight text-stone-900">{{ $todayDepartures }}</p>
-                <p class="mt-1 text-xs text-stone-500">Checked-in bookings scheduled to leave today</p>
+                <p class="mt-1 text-xs leading-5 text-stone-500">Checked-in bookings scheduled to leave today</p>
             </a>
-            <a href="{{ route('rooms.index') }}" class="group rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <a href="{{ route('rooms.index') }}" class="group flex min-h-36 flex-col rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-stone-500">Available rooms</p>
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
@@ -55,12 +58,12 @@
                     </span>
                 </div>
                 <p class="mt-4 text-3xl font-semibold tracking-tight text-stone-900">{{ $availableRooms }}<span class="ml-2 text-base font-medium text-stone-400">/ {{ $activeRoomCount }}</span></p>
-                <p class="mt-1 text-xs text-stone-500">Active rooms currently marked available</p>
+                <p class="mt-1 text-xs leading-5 text-stone-500">Active rooms currently marked available</p>
             </a>
         @endif
 
         @if($canManageInventory)
-            <a href="{{ route('inventory.index', ['low_stock' => 1]) }}" class="group rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <a href="{{ route('inventory.index', ['low_stock' => 1]) }}" class="group flex min-h-36 flex-col rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-stone-500">Low stock items</p>
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-700">
@@ -73,24 +76,38 @@
         @endif
     </div>
 
-    <div class="grid grid-cols-1 gap-6 {{ $canManageHotel && $canManageInventory ? 'xl:grid-cols-2' : 'xl:grid-cols-1' }}">
+    <div class="grid grid-cols-1 items-start gap-6 {{ $canManageHotel && $canManageInventory ? 'xl:grid-cols-2' : 'xl:grid-cols-1' }}">
         @if($canManageHotel)
             <section class="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
-                <div class="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-5 py-4 sm:px-6">
                     <div>
                         <h2 class="font-semibold text-stone-900">Recent bookings</h2>
                         <p class="mt-1 text-xs text-stone-500">Latest reservations added to the system</p>
                     </div>
-                    <a href="{{ route('bookings.index') }}" class="text-sm font-semibold text-primary-700 hover:text-primary-800">All bookings</a>
+                    <a href="{{ route('bookings.index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 transition hover:text-primary-800 focus:outline-none focus:underline">
+                        All bookings
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </a>
                 </div>
                 <div class="divide-y divide-stone-100">
                     @forelse($recentBookings as $booking)
-                        <a href="{{ route('bookings.show', $booking) }}" class="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50">
+                        <a href="{{ route('bookings.show', $booking) }}" class="flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-stone-50 focus:bg-stone-50 focus:outline-none sm:gap-4 sm:px-6">
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-stone-900">{{ $booking->guest->full_name }} <span class="font-normal text-stone-500">· {{ $booking->booking_number }}</span></p>
-                                <p class="mt-1 text-xs text-stone-500">Room {{ $booking->room->room_number }} · {{ $booking->check_in_date->format('d M Y') }}</p>
+                                <p class="truncate text-sm font-semibold text-stone-900">{{ $booking->guest->full_name }}</p>
+                                <p class="mt-1 truncate text-xs text-stone-500">{{ $booking->booking_number }} <span aria-hidden="true">·</span> {{ $booking->room->room_number }} <span aria-hidden="true">·</span> {{ $booking->check_in_date->format('d M Y') }}</p>
                             </div>
-                            <span class="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-700">{{ $booking->booking_status->label() }}</span>
+                            @php
+                                $bookingStatusColors = [
+                                    'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/20',
+                                    'confirmed' => 'bg-blue-50 text-blue-700 ring-blue-600/20',
+                                    'checked_in' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+                                    'checked_out' => 'bg-stone-100 text-stone-600 ring-stone-500/20',
+                                    'cancelled' => 'bg-red-50 text-red-700 ring-red-600/20',
+                                    'no_show' => 'bg-orange-50 text-orange-700 ring-orange-600/20',
+                                ];
+                                $bookingStatusColor = $bookingStatusColors[$booking->booking_status->value] ?? 'bg-stone-100 text-stone-600 ring-stone-500/20';
+                            @endphp
+                            <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {{ $bookingStatusColor }}">{{ $booking->booking_status->label() }}</span>
                         </a>
                     @empty
                         <p class="px-5 py-10 text-center text-sm text-stone-500">No bookings have been recorded yet.</p>
@@ -101,16 +118,19 @@
 
         @if($canManageInventory)
             <section class="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
-                <div class="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-5 py-4 sm:px-6">
                     <div>
                         <h2 class="font-semibold text-stone-900">Stock needing attention</h2>
                         <p class="mt-1 text-xs text-stone-500">Inventory items at or below their minimum level</p>
                     </div>
-                    <a href="{{ route('inventory.index', ['low_stock' => 1]) }}" class="text-sm font-semibold text-primary-700 hover:text-primary-800">View inventory</a>
+                    <a href="{{ route('inventory.index', ['low_stock' => 1]) }}" class="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 transition hover:text-primary-800 focus:outline-none focus:underline">
+                        View inventory
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </a>
                 </div>
                 <div class="divide-y divide-stone-100">
                     @forelse($lowStockItems as $item)
-                        <a href="{{ route('inventory.index', ['low_stock' => 1, 'search' => $item->sku]) }}" class="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50">
+                        <a href="{{ route('inventory.index', ['low_stock' => 1, 'search' => $item->sku]) }}" class="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 focus:bg-stone-50 focus:outline-none sm:px-6">
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-semibold text-stone-900">{{ $item->name }}</p>
                                 <p class="mt-1 text-xs text-stone-500">{{ $item->sku }} · minimum {{ number_format((float) $item->minimum_stock, 2) }} {{ $item->unit }}</p>
@@ -124,12 +144,15 @@
             </section>
 
             <section class="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
-                <div class="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-5 py-4 sm:px-6">
                     <div>
                         <h2 class="font-semibold text-stone-900">Recent stock movements</h2>
                         <p class="mt-1 text-xs text-stone-500">Latest inventory transactions</p>
                     </div>
-                    <a href="{{ route('inventory.transactions.index') }}" class="text-sm font-semibold text-primary-700 hover:text-primary-800">All transactions</a>
+                    <a href="{{ route('inventory.transactions.index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 transition hover:text-primary-800 focus:outline-none focus:underline">
+                        All transactions
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </a>
                 </div>
                 <div class="divide-y divide-stone-100">
                     @forelse($recentTransactions as $transaction)

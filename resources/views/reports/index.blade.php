@@ -30,6 +30,10 @@
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4m-4 6v3h16v-3"></path></svg>
                 Export CSV
             </a>
+            <a href="{{ route('reports.export.pdf', ['period' => $period, 'date' => $anchorDate->format('Y-m-d')]) }}" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4m-4 6v3h16v-3"></path></svg>
+                Export PDF
+            </a>
         </div>
     </div>
 

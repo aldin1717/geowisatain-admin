@@ -33,6 +33,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('bookings/{booking}/check-in/receipt', [BookingController::class, 'printCheckInReceipt'])->name('bookings.check-in.receipt');
         Route::get('bookings/{booking}/check-in/receipt/download', [BookingController::class, 'downloadCheckInReceipt'])->name('bookings.check-in.receipt.download');
         Route::post('bookings/{booking}/check-out', [BookingController::class, 'checkOut'])->name('bookings.check-out');
+        Route::post('bookings/{booking}/early-check-out', [BookingController::class, 'earlyCheckOut'])->name('bookings.early-check-out');
         Route::post('bookings/{booking}/payments', [BookingController::class, 'recordPayment'])->name('bookings.payments.store');
         Route::get('billing-groups', [BillingGroupController::class, 'index'])->name('billing-groups.index');
         Route::get('billing-groups/create', [BillingGroupController::class, 'create'])->name('billing-groups.create');
@@ -41,6 +42,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('billing-groups/{billingGroup}/payments', [BillingGroupController::class, 'recordPayment'])->name('billing-groups.payments.store');
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+        Route::get('reports/export/pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');
     });
 
     Route::middleware('role:admin,warehouse')->prefix('inventory')->name('inventory.')->group(function () {

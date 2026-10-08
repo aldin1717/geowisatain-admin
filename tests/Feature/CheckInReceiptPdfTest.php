@@ -51,12 +51,19 @@ class CheckInReceiptPdfTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->post(route('bookings.check-in', $booking))
+            ->get(route('bookings.show', $booking))
+            ->assertOk()
+            ->assertSee('id="checkInForm"', false)
+            ->assertSee(':form="confirmationType', false);
+
+        $this->post(route('bookings.check-in', $booking))
             ->assertRedirect(route('bookings.show', $booking))
             ->assertSessionHas('success', 'Check-in processed successfully.');
 
         $this->get(route('bookings.show', $booking))
             ->assertOk()
+            ->assertSee('id="checkOutForm"', false)
+            ->assertSee('id="earlyCheckOutForm"', false)
             ->assertSee('Check-in processed successfully.')
             ->assertSee(route('bookings.check-in.receipt', $booking))
             ->assertSee('target="_blank"', false)

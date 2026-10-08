@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Booking;
 use App\Models\Guest;
+use App\Models\Payment;
 use App\Models\Role;
 use App\Models\Room;
 use App\Models\RoomType;
@@ -18,6 +19,56 @@ use Tests\TestCase;
 class PaymentTransactionTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_report_summary_cards_use_day_week_and_month_ranges(): void
+    {
+        $role = Role::create(['name' => 'Admin', 'slug' => 'admin']);
+        $user = User::factory()->create(['role_id' => $role->id, 'is_active' => true]);
+        $guest = Guest::create(['guest_code' => 'G-REPORT-001', 'full_name' => 'Report Guest']);
+        $roomType = RoomType::create(['name' => 'Report Room', 'slug' => 'report-room']);
+        $room = Room::create([
+            'room_number' => 'R-101',
+            'room_type_id' => $roomType->id,
+            'capacity' => 2,
+            'price_per_night' => 100000,
+        ]);
+        $booking = Booking::create([
+            'booking_number' => 'BK-REPORT-001',
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in_date' => '2026-10-08',
+            'check_out_date' => today()->toDateString(),
+            'num_guests' => 1,
+            'num_nights' => 1,
+            'room_rate' => 100000,
+            'grand_total' => 100000,
+        ]);
+
+        foreach ([
+            ['RPT-001', '2026-10-08 09:00:00', 100000],
+            ['RPT-002', '2026-10-07 09:00:00', 200000],
+            ['RPT-003', '2026-10-12 09:00:00', 400000],
+            ['RPT-004', '2026-09-30 09:00:00', 800000],
+        ] as [$number, $date, $amount]) {
+            Payment::create([
+                'payment_number' => $number,
+                'booking_id' => $booking->id,
+                'payment_date' => $date,
+                'amount' => $amount,
+                'payment_method' => PaymentMethod::Cash,
+                'payment_status' => PaymentStatus::Paid,
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get(route('reports.index', ['period' => 'week', 'date' => '2026-10-08']))
+            ->assertOk()
+            ->assertViewHas('summary', function (array $summary): bool {
+                return (float) $summary['day'] === 100000.0
+                    && (float) $summary['week'] === 300000.0
+                    && (float) $summary['month'] === 700000.0;
+            });
+    }
 
     public function test_user_can_record_a_booking_payment(): void
     {
@@ -112,7 +163,8 @@ class PaymentTransactionTest extends TestCase
             ->assertOk()
             ->assertSee('Payment Reports')
             ->assertSee('Rp 1.000.000')
-            ->assertSee('PAY-');
+            ->assertSee('PAY-')
+            ->assertSee(route('reports.export.pdf', $filters));
 
         $this->get(route('reports.index', ['period' => 'week', 'date' => now()->toDateString()]))
             ->assertOk()
@@ -131,6 +183,13 @@ class PaymentTransactionTest extends TestCase
         $this->assertStringContainsString('PAY-', $csvContent);
         $this->assertStringContainsString('John Doe', $csvContent);
         $this->assertStringContainsString('Tipe Booking', $csvContent);
+
+        $pdfResponse = $this->get(route('reports.export.pdf', $filters));
+        $pdfResponse
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition');
+        $this->assertStringStartsWith('%PDF', $pdfResponse->getContent());
     }
 
     public function test_checked_in_diklat_booking_with_zero_total_can_check_out_without_payment(): void
@@ -156,7 +215,7 @@ class PaymentTransactionTest extends TestCase
             'guest_id' => $guest->id,
             'room_id' => $room->id,
             'check_in_date' => '2026-10-07',
-            'check_out_date' => '2026-10-09',
+            'check_out_date' => today()->toDateString(),
             'num_guests' => 1,
             'num_nights' => 2,
             'room_rate' => 0,
@@ -168,11 +227,83 @@ class PaymentTransactionTest extends TestCase
         ]);
         $booking->rooms()->sync([$room->id]);
 
-        $this->actingAs($user);
-        app(CheckOutService::class)->process($booking);
+        $this->actingAs($user)
+            ->post(route('bookings.check-out', $booking))
+            ->assertRedirect(route('bookings.show', $booking))
+            ->assertSessionHas('success', 'Check-out processed successfully.');
 
         $this->assertSame(BookingStatus::CheckedOut, $booking->fresh()->booking_status);
         $this->assertSame(PaymentStatus::Paid, $booking->fresh()->payment_status);
+        $this->assertSame('cleaning', $room->fresh()->status->value);
+    }
+
+    public function test_checked_in_booking_can_check_out_early_without_changing_booking_total(): void
+    {
+        $role = Role::create(['name' => 'Admin', 'slug' => 'admin']);
+        $user = User::factory()->create(['role_id' => $role->id, 'is_active' => true]);
+        $guest = Guest::create([
+            'guest_code' => 'G-EARLY-001',
+            'full_name' => 'Early Checkout Guest',
+        ]);
+        $roomType = RoomType::create(['name' => 'Early Checkout', 'slug' => 'early-checkout']);
+        $room = Room::create([
+            'room_number' => '303',
+            'room_type_id' => $roomType->id,
+            'capacity' => 2,
+            'price_per_night' => 300000,
+            'status' => 'occupied',
+        ]);
+        $booking = Booking::create([
+            'booking_number' => 'BK-EARLY-001',
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in_date' => today()->subDay()->toDateString(),
+            'check_out_date' => today()->addDays(2)->toDateString(),
+            'num_guests' => 1,
+            'num_nights' => 3,
+            'room_rate' => 300000,
+            'grand_total' => 900000,
+            'booking_status' => BookingStatus::CheckedIn,
+            'payment_status' => PaymentStatus::Paid,
+        ]);
+        $booking->rooms()->sync([$room->id]);
+        Payment::create([
+            'payment_number' => 'PAY-EARLY-001',
+            'booking_id' => $booking->id,
+            'payment_date' => now(),
+            'amount' => 900000,
+            'payment_method' => PaymentMethod::Cash,
+            'payment_status' => PaymentStatus::Paid,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('bookings.show', $booking))
+            ->assertOk()
+            ->assertSee('id="checkOutForm"', false)
+            ->assertSee('id="earlyCheckOutForm"', false)
+            ->assertSee(':form="confirmationType', false)
+            ->assertSee(route('bookings.check-out', $booking))
+            ->assertSee(route('bookings.early-check-out', $booking))
+            ->assertSee('Early Check-out')
+            ->assertSee('early_check_out_reason')
+            ->assertSee('Total booking tetap sama dan tidak ada refund otomatis.');
+
+        $this->post(route('bookings.early-check-out', $booking))
+            ->assertSessionHasErrors('early_check_out_reason');
+        $this->assertSame(BookingStatus::CheckedIn, $booking->fresh()->booking_status);
+
+        $this->post(route('bookings.early-check-out', $booking), [
+            'early_check_out_reason' => 'Guest needs to leave earlier.',
+        ])
+            ->assertRedirect(route('bookings.show', $booking))
+            ->assertSessionHas('success', 'Early check-out processed successfully.');
+
+        $checkedOutBooking = $booking->fresh();
+        $this->assertSame(BookingStatus::CheckedOut, $checkedOutBooking->booking_status);
+        $this->assertTrue($checkedOutBooking->is_early_check_out);
+        $this->assertStringContainsString('Early check-out reason: Guest needs to leave earlier.', $checkedOutBooking->notes);
+        $this->assertSame(900000.0, (float) $checkedOutBooking->grand_total);
+        $this->assertSame(today()->addDays(2)->toDateString(), $checkedOutBooking->check_out_date->toDateString());
         $this->assertSame('cleaning', $room->fresh()->status->value);
     }
 
@@ -199,7 +330,7 @@ class PaymentTransactionTest extends TestCase
             'guest_id' => $guest->id,
             'room_id' => $room->id,
             'check_in_date' => '2026-10-07',
-            'check_out_date' => '2026-10-09',
+            'check_out_date' => today()->toDateString(),
             'num_guests' => 1,
             'num_nights' => 2,
             'room_rate' => 400000,

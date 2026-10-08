@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\PaymentStatus;
 use App\Models\Booking;
 use App\Models\Payment;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -12,6 +13,22 @@ use Illuminate\Http\Request;
 class ReportController extends Controller
 {
     public function index(Request $request)
+    {
+        return view('reports.index', $this->reportData($request));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $data = $this->reportData($request);
+        $periodLabel = $data['period'] === 'week' ? 'mingguan' : 'bulanan';
+        $filename = "laporan-pembayaran-{$periodLabel}-{$data['anchorDate']->format('Y-m-d')}.pdf";
+
+        return Pdf::loadView('reports.pdf', $data)
+            ->setPaper('a4', 'landscape')
+            ->download($filename);
+    }
+
+    private function reportData(Request $request): array
     {
         [$period, $anchorDate, $start, $end] = $this->periodRange($request);
         $payments = $this->paymentsForRange($start, $end)
@@ -51,12 +68,12 @@ class ReportController extends Controller
         }
 
         $summary = [
-            'day' => $payments->sum('amount'),
+            'day' => $this->paymentsForRange($anchorDate->copy()->startOfDay(), $anchorDate->copy()->endOfDay())->sum('amount'),
             'week' => $this->paymentsForRange($anchorDate->copy()->startOfWeek(Carbon::MONDAY)->startOfDay(), $anchorDate->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay())->sum('amount'),
             'month' => $this->paymentsForRange($anchorDate->copy()->startOfMonth()->startOfDay(), $anchorDate->copy()->endOfMonth()->endOfDay())->sum('amount'),
         ];
 
-        return view('reports.index', [
+        return [
             'period' => $period,
             'anchorDate' => $anchorDate,
             'start' => $start,
@@ -75,7 +92,7 @@ class ReportController extends Controller
             'dailyReport' => $dailyReport,
             'maxDailyIncome' => max(1, ...array_column($dailyReport, 'amount')),
             'summary' => $summary,
-        ]);
+        ];
     }
 
     public function export(Request $request)

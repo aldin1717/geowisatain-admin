@@ -48,7 +48,6 @@ class StoreBookingRequest extends FormRequest
             'num_guests' => ['required', 'integer', 'min:1'],
             'booking_type' => ['nullable', 'in:general,corporate,esdm,travel_agent,diklat'],
             'is_day_use' => ['nullable', 'boolean'],
-            'is_early_check_out' => ['nullable', 'boolean'],
             'is_bill_merged' => ['nullable', 'boolean'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],

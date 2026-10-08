@@ -7,7 +7,7 @@
         <div>
             <p class="text-sm font-medium text-primary-700">{{ now()->format('l, d F Y') }}</p>
             <h1 class="mt-1 text-2xl font-semibold tracking-tight text-stone-900">Welcome back, {{ explode(' ', $user->name)[0] }}!</h1>
-            <p class="mt-1 text-sm text-stone-500">Here is today's overview for {{ config('app.name', 'Geowisata Inn') }}.</p>
+            <p class="mt-1 text-sm text-stone-500">Here is today's overview for {{ config('app.name', 'GeowisataInn') }}.</p>
         </div>
         <div class="flex flex-wrap gap-3">
             @if($canManageHotel)

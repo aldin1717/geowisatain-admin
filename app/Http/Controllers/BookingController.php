@@ -139,10 +139,26 @@ class BookingController extends Controller
 
     public function checkOut(Booking $booking)
     {
-        try {
-            $this->checkOutService->process($booking);
+        return $this->processCheckOut($booking, false);
+    }
 
-            return back()->with('success', 'Check-out processed successfully.');
+    public function earlyCheckOut(Request $request, Booking $booking)
+    {
+        $validated = $request->validate([
+            'early_check_out_reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        return $this->processCheckOut($booking, true, $validated['early_check_out_reason']);
+    }
+
+    private function processCheckOut(Booking $booking, bool $early, ?string $reason = null)
+    {
+        try {
+            $this->checkOutService->process($booking, $early, $reason);
+
+            return back()->with('success', $early
+                ? 'Early check-out processed successfully.'
+                : 'Check-out processed successfully.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }

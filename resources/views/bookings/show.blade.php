@@ -3,7 +3,7 @@
 @section('title', 'Booking ' . $booking->booking_number)
 
 @section('content')
-    <div x-data="{ confirmationOpen: false, confirmationType: '', confirmAction() { if (this.confirmationType === 'check-in') this.$refs.checkInForm.requestSubmit(); else this.$refs.checkOutForm.requestSubmit(); } }">
+    <div x-data="{ confirmationOpen: {{ $errors->has('early_check_out_reason') ? 'true' : 'false' }}, confirmationType: '{{ $errors->has('early_check_out_reason') ? 'early-check-out' : '' }}' }">
     <div class="mb-6">
         <div class="flex items-center gap-2 text-sm text-stone-500 mb-2">
             <a href="{{ route('bookings.index') }}" class="hover:text-primary-700 transition-colors">Bookings</a>
@@ -16,7 +16,7 @@
                 
                 {{-- Actions based on Status --}}
                 @if($booking->booking_status->value === 'confirmed')
-                    <form method="POST" action="{{ route('bookings.check-in', $booking) }}" x-ref="checkInForm">
+                    <form id="checkInForm" method="POST" action="{{ route('bookings.check-in', $booking) }}">
                         @csrf
                         <button type="button" @click="confirmationType = 'check-in'; confirmationOpen = true" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
@@ -26,13 +26,22 @@
                 @endif
 
                 @if($booking->booking_status->value === 'checked_in')
-                    <form method="POST" action="{{ route('bookings.check-out', $booking) }}" x-ref="checkOutForm">
+                    <form id="checkOutForm" method="POST" action="{{ route('bookings.check-out', $booking) }}">
                         @csrf
                         <button type="button" @click="confirmationType = 'check-out'; confirmationOpen = true" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                             Process Check-out
                         </button>
                     </form>
+                    @if($booking->check_out_date->isAfter(today()))
+                        <form id="earlyCheckOutForm" method="POST" action="{{ route('bookings.early-check-out', $booking) }}">
+                            @csrf
+                            <button type="button" @click="confirmationType = 'early-check-out'; confirmationOpen = true" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                Early Check-out
+                            </button>
+                        </form>
+                    @endif
                     <a href="{{ route('bookings.check-in.receipt', $booking) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors">
                         View Check-in Form
                     </a>
@@ -357,15 +366,27 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 4h.01M10.29 3.86l-7.1 12.3A2 2 0 004.92 19h14.16a2 2 0 001.73-2.84l-7.1-12.3a2 2 0 00-3.46 0z"></path>
                 </svg>
             </div>
-            <h2 id="booking-confirmation-title" class="mt-4 text-lg font-semibold text-stone-900">Konfirmasi <span x-text="confirmationType === 'check-in' ? 'Check-in' : 'Check-out'"></span></h2>
-            <p id="booking-confirmation-description" class="mt-2 text-sm leading-6 text-stone-600">
-                Yakin ingin memproses <span x-text="confirmationType === 'check-in' ? 'check-in' : 'check-out'"></span> untuk booking <strong class="font-semibold text-stone-800">{{ $booking->booking_number }}</strong>?
-            </p>
+            <h2 id="booking-confirmation-title" class="mt-4 text-lg font-semibold text-stone-900">Konfirmasi <span x-text="confirmationType === 'check-in' ? 'Check-in' : (confirmationType === 'early-check-out' ? 'Early Check-out' : 'Check-out')"></span></h2>
+            <div id="booking-confirmation-description" class="mt-2 text-sm leading-6 text-stone-600">
+                <template x-if="confirmationType === 'early-check-out'">
+                    <p>Check-out lebih awal akan mencatat waktu aktual dan melepas kamar. Total booking tetap sama dan tidak ada refund otomatis.</p>
+                </template>
+                <template x-if="confirmationType !== 'early-check-out'">
+                    <p>Yakin ingin memproses <span x-text="confirmationType === 'check-in' ? 'check-in' : 'check-out'"></span> untuk booking <strong class="font-semibold text-stone-800">{{ $booking->booking_number }}</strong>?</p>
+                </template>
+            </div>
+            <div x-show="confirmationType === 'early-check-out'" class="mt-4 text-left">
+                <label for="early_check_out_reason" class="mb-1 block text-sm font-medium text-stone-700">Alasan Early Check-out</label>
+                <textarea id="early_check_out_reason" name="early_check_out_reason" form="earlyCheckOutForm" rows="3" required maxlength="1000" class="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-primary-500 focus:ring-primary-500" placeholder="Masukkan alasan check-out lebih awal">{{ old('early_check_out_reason') }}</textarea>
+                @error('early_check_out_reason')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
             <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
                 <button type="button" @click="confirmationOpen = false" class="inline-flex justify-center rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-stone-50">
                     Batal
                 </button>
-                <button type="button" @click="confirmAction()" class="inline-flex justify-center rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary-800">
+                <button type="submit" :form="confirmationType === 'check-in' ? 'checkInForm' : (confirmationType === 'early-check-out' ? 'earlyCheckOutForm' : 'checkOutForm')" class="inline-flex justify-center rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary-800">
                     Ya, lanjutkan
                 </button>
             </div>

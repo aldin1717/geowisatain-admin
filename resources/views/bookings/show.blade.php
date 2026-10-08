@@ -3,6 +3,7 @@
 @section('title', 'Booking ' . $booking->booking_number)
 
 @section('content')
+    <div x-data="{ confirmationOpen: false, confirmationType: '', confirmAction() { if (this.confirmationType === 'check-in') this.$refs.checkInForm.requestSubmit(); else this.$refs.checkOutForm.requestSubmit(); } }">
     <div class="mb-6">
         <div class="flex items-center gap-2 text-sm text-stone-500 mb-2">
             <a href="{{ route('bookings.index') }}" class="hover:text-primary-700 transition-colors">Bookings</a>
@@ -15,9 +16,9 @@
                 
                 {{-- Actions based on Status --}}
                 @if($booking->booking_status->value === 'confirmed')
-                    <form method="POST" action="{{ route('bookings.check-in', $booking) }}">
+                    <form method="POST" action="{{ route('bookings.check-in', $booking) }}" x-ref="checkInForm">
                         @csrf
-                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors">
+                        <button type="button" @click="confirmationType = 'check-in'; confirmationOpen = true" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
                             Process Check-in
                         </button>
@@ -25,13 +26,16 @@
                 @endif
 
                 @if($booking->booking_status->value === 'checked_in')
-                    <form method="POST" action="{{ route('bookings.check-out', $booking) }}">
+                    <form method="POST" action="{{ route('bookings.check-out', $booking) }}" x-ref="checkOutForm">
                         @csrf
-                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors">
+                        <button type="button" @click="confirmationType = 'check-out'; confirmationOpen = true" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                             Process Check-out
                         </button>
                     </form>
+                    <a href="{{ route('bookings.check-in.receipt', $booking) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors">
+                        View Check-in Form
+                    </a>
                 @endif
 
                 <a href="{{ route('bookings.edit', $booking) }}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors">
@@ -361,5 +365,27 @@
                 </div>
             </div>
         </div>
+    </div>
+    <div x-cloak x-show="confirmationOpen" x-transition.opacity class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4" role="presentation" @click.self="confirmationOpen = false" @keydown.escape.window="confirmationOpen = false" style="display: none;">
+        <div x-show="confirmationOpen" x-transition class="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="booking-confirmation-title" aria-describedby="booking-confirmation-description">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-700">
+                <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 4h.01M10.29 3.86l-7.1 12.3A2 2 0 004.92 19h14.16a2 2 0 001.73-2.84l-7.1-12.3a2 2 0 00-3.46 0z"></path>
+                </svg>
+            </div>
+            <h2 id="booking-confirmation-title" class="mt-4 text-lg font-semibold text-stone-900">Konfirmasi <span x-text="confirmationType === 'check-in' ? 'Check-in' : 'Check-out'"></span></h2>
+            <p id="booking-confirmation-description" class="mt-2 text-sm leading-6 text-stone-600">
+                Yakin ingin memproses <span x-text="confirmationType === 'check-in' ? 'check-in' : 'check-out'"></span> untuk booking <strong class="font-semibold text-stone-800">{{ $booking->booking_number }}</strong>?
+            </p>
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+                <button type="button" @click="confirmationOpen = false" class="inline-flex justify-center rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-stone-50">
+                    Batal
+                </button>
+                <button type="button" @click="confirmAction()" class="inline-flex justify-center rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary-800">
+                    Ya, lanjutkan
+                </button>
+            </div>
+        </div>
+    </div>
     </div>
 @endsection

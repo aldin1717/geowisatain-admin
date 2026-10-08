@@ -41,9 +41,12 @@
                 </select>
             </div>
 
+            <input type="date" name="check_in_date" value="{{ request('check_in_date') }}" aria-label="Check-in date" class="rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            <input type="date" name="check_out_date" value="{{ request('check_out_date') }}" aria-label="Check-out date" class="rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+
             <button type="submit" class="px-4 py-2 bg-stone-100 text-stone-700 text-sm font-medium rounded-lg hover:bg-stone-200 border border-stone-300 transition-colors">Filter</button>
             
-            @if(request('search') || request('status'))
+            @if(request('search') || request('status') || request('check_in_date') || request('check_out_date'))
                 <a href="{{ route('bookings.index') }}" class="px-4 py-2 text-sm text-stone-500 hover:text-stone-700 transition-colors flex items-center">Clear</a>
             @endif
         </form>

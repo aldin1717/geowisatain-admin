@@ -5,18 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Check-in Receipt</title>
     <style>
+        @page { size: A4; margin: 18mm; }
         body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
         .header { text-align: center; margin-bottom: 20px; }
         .title { font-size: 22px; font-weight: bold; letter-spacing: 0.04em; }
         .meta { font-size: 12px; color: #6b7280; }
+        .actions { margin-bottom: 20px; text-align: right; }
+        .download-link { display: inline-block; padding: 9px 14px; border-radius: 6px; background: #059669; color: #ffffff; font-size: 13px; font-weight: bold; text-decoration: none; }
         table { width: 100%; border-collapse: collapse; margin-top: 18px; }
         th, td { border-bottom: 1px solid #e5e7eb; padding: 8px 6px; text-align: left; font-size: 13px; }
         .totals { margin-top: 18px; font-size: 14px; }
         .totals td { border: none; }
         .footer { margin-top: 22px; font-size: 12px; color: #6b7280; }
+        @media print { .actions { display: none; } }
     </style>
 </head>
 <body>
+    @unless(request()->routeIs('bookings.check-in.receipt.download'))
+    <div class="actions">
+        <a class="download-link" href="{{ route('bookings.check-in.receipt.download', $booking) }}">Download PDF</a>
+    </div>
+    @endunless
+
     <div class="header">
         <div class="title">CHECK-IN RECEIPT</div>
         <div class="meta">Hotel Management System</div>

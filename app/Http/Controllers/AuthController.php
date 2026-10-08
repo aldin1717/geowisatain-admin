@@ -31,7 +31,7 @@ class AuthController extends Controller
                 ]);
             }
 
-            return redirect()->intended('/');
+            return redirect()->intended('/')->with('success', 'Berhasil login. Selamat datang, '.Auth::user()->name.'.');
         }
 
         return back()->withErrors([

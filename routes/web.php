@@ -19,6 +19,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // Hotel Operations (Admin + Receptionist)
     Route::middleware('role:admin,receptionist')->group(function () {
@@ -29,6 +30,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('bookings', BookingController::class);
         Route::post('bookings/{booking}/check-in', [BookingController::class, 'checkIn'])->name('bookings.check-in');
         Route::get('bookings/{booking}/check-in/receipt', [BookingController::class, 'printCheckInReceipt'])->name('bookings.check-in.receipt');
+        Route::get('bookings/{booking}/check-in/receipt/download', [BookingController::class, 'downloadCheckInReceipt'])->name('bookings.check-in.receipt.download');
         Route::post('bookings/{booking}/check-out', [BookingController::class, 'checkOut'])->name('bookings.check-out');
         Route::post('bookings/{booking}/payments', [BookingController::class, 'recordPayment'])->name('bookings.payments.store');
         Route::get('billing-groups', [BillingGroupController::class, 'index'])->name('billing-groups.index');

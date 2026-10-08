@@ -10,6 +10,7 @@ use App\Services\BookingService;
 use App\Services\CheckInService;
 use App\Services\CheckOutService;
 use App\Services\PaymentService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -36,6 +37,14 @@ class BookingController extends Controller
 
         if ($status = $request->input('status')) {
             $query->where('booking_status', $status);
+        }
+
+        if ($checkInDate = $request->input('check_in_date')) {
+            $query->whereDate('check_in_date', $checkInDate);
+        }
+
+        if ($checkOutDate = $request->input('check_out_date')) {
+            $query->whereDate('check_out_date', $checkOutDate);
         }
 
         $bookings = $query->latest()
@@ -94,7 +103,7 @@ class BookingController extends Controller
         try {
             $this->checkInService->process($booking);
 
-            return redirect()->route('bookings.check-in.receipt', $booking)
+            return redirect()->route('bookings.show', $booking)
                 ->with('success', 'Check-in processed successfully.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -103,12 +112,23 @@ class BookingController extends Controller
 
     public function printCheckInReceipt(Booking $booking)
     {
+        return view('bookings.receipt', $this->checkInReceiptData($booking));
+    }
+
+    public function downloadCheckInReceipt(Booking $booking)
+    {
+        return Pdf::loadView('bookings.receipt', $this->checkInReceiptData($booking))
+            ->download('check-in-'.$booking->booking_number.'.pdf');
+    }
+
+    private function checkInReceiptData(Booking $booking): array
+    {
         $booking->load(['guest', 'room.roomType']);
         $selectedRoomIds = $booking->selectedRoomIds();
         $selectedRooms = Room::with('roomType')->whereIn('id', $selectedRoomIds)->get()
             ->sortBy(fn (Room $room) => array_search($room->id, $selectedRoomIds));
 
-        return view('bookings.receipt', compact('booking', 'selectedRooms'));
+        return compact('booking', 'selectedRooms');
     }
 
     public function checkOut(Booking $booking)

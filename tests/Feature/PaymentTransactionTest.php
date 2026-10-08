@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;
+use App\Services\CheckOutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -129,6 +130,96 @@ class PaymentTransactionTest extends TestCase
 
         $this->assertStringContainsString('PAY-', $csvContent);
         $this->assertStringContainsString('John Doe', $csvContent);
+        $this->assertStringContainsString('Tipe Booking', $csvContent);
+    }
+
+    public function test_checked_in_diklat_booking_with_zero_total_can_check_out_without_payment(): void
+    {
+        $role = Role::create(['name' => 'Admin', 'slug' => 'admin']);
+        $user = User::factory()->create(['role_id' => $role->id, 'is_active' => true]);
+        $guest = Guest::create([
+            'guest_code' => 'G-DIKLAT-001',
+            'full_name' => 'Diklat Guest',
+            'phone' => '081234567890',
+            'email' => 'diklat@example.com',
+        ]);
+        $roomType = RoomType::create(['name' => 'Superior', 'slug' => 'superior']);
+        $room = Room::create([
+            'room_number' => '301',
+            'room_type_id' => $roomType->id,
+            'capacity' => 2,
+            'price_per_night' => 300000,
+            'status' => 'occupied',
+        ]);
+        $booking = Booking::create([
+            'booking_number' => 'BK-2026-DIKLAT-001',
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in_date' => '2026-10-07',
+            'check_out_date' => '2026-10-09',
+            'num_guests' => 1,
+            'num_nights' => 2,
+            'room_rate' => 0,
+            'grand_total' => 0,
+            'booking_status' => BookingStatus::CheckedIn,
+            'payment_status' => PaymentStatus::Unpaid,
+            'booking_type' => 'diklat',
+            'created_by' => $user->id,
+        ]);
+        $booking->rooms()->sync([$room->id]);
+
+        $this->actingAs($user);
+        app(CheckOutService::class)->process($booking);
+
+        $this->assertSame(BookingStatus::CheckedOut, $booking->fresh()->booking_status);
+        $this->assertSame(PaymentStatus::Paid, $booking->fresh()->payment_status);
+        $this->assertSame('cleaning', $room->fresh()->status->value);
+    }
+
+    public function test_checked_in_booking_with_outstanding_balance_cannot_check_out(): void
+    {
+        $role = Role::create(['name' => 'Admin', 'slug' => 'admin']);
+        $user = User::factory()->create(['role_id' => $role->id, 'is_active' => true]);
+        $guest = Guest::create([
+            'guest_code' => 'G-UNPAID-001',
+            'full_name' => 'Unpaid Guest',
+            'phone' => '081234567891',
+            'email' => 'unpaid@example.com',
+        ]);
+        $roomType = RoomType::create(['name' => 'Deluxe', 'slug' => 'deluxe']);
+        $room = Room::create([
+            'room_number' => '302',
+            'room_type_id' => $roomType->id,
+            'capacity' => 2,
+            'price_per_night' => 400000,
+            'status' => 'occupied',
+        ]);
+        $booking = Booking::create([
+            'booking_number' => 'BK-2026-UNPAID-001',
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in_date' => '2026-10-07',
+            'check_out_date' => '2026-10-09',
+            'num_guests' => 1,
+            'num_nights' => 2,
+            'room_rate' => 400000,
+            'grand_total' => 800000,
+            'booking_status' => BookingStatus::CheckedIn,
+            'payment_status' => PaymentStatus::Unpaid,
+            'created_by' => $user->id,
+        ]);
+        $booking->rooms()->sync([$room->id]);
+
+        $this->actingAs($user);
+        try {
+            app(CheckOutService::class)->process($booking);
+            $this->fail('Check-out must be rejected when the booking has an outstanding balance.');
+        } catch (\Exception $exception) {
+            $this->assertSame('Cannot check-out before payment is completed.', $exception->getMessage());
+        }
+
+        $this->assertSame(BookingStatus::CheckedIn, $booking->fresh()->booking_status);
+        $this->assertSame('occupied', $room->fresh()->status->value);
     }
 
     public function test_one_payer_can_pay_for_multiple_bookings_with_one_payment(): void

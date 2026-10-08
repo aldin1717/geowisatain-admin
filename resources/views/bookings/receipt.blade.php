@@ -59,7 +59,7 @@
         </tr>
         <tr>
             <th>Type</th>
-            <td>{{ $booking->booking_type ? $booking->booking_type->label() : 'Umum' }}</td>
+            <td>{{ $booking->booking_type?->label() ?? 'Umum' }}</td>
         </tr>
     </table>
 

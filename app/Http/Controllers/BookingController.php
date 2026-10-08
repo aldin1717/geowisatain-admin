@@ -56,11 +56,17 @@ class BookingController extends Controller
 
     public function create()
     {
-        $rooms = Room::with('roomType')->where('is_active', true)->orderBy('room_number')->get();
+        $rooms = Room::with('roomType')
+            ->where('is_active', true)
+            ->orderBy('floor')
+            ->orderBy('room_number')
+            ->get();
         $hotelRooms = $rooms->filter(fn (Room $room) => $room->roomType->category === 'room')->values();
         $ballrooms = $rooms->filter(fn (Room $room) => $room->roomType->category === 'ballroom')->values();
+        $roomFloors = $hotelRooms->pluck('floor')->filter()->unique()->sort()->values();
+        $roomTypes = $hotelRooms->pluck('roomType.name')->unique()->sort()->values();
 
-        return view('bookings.create', compact('hotelRooms', 'ballrooms'));
+        return view('bookings.create', compact('hotelRooms', 'ballrooms', 'roomFloors', 'roomTypes'));
     }
 
     public function store(StoreBookingRequest $request)

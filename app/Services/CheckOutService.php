@@ -14,23 +14,26 @@ class CheckOutService
 {
     public function process(Booking $booking)
     {
-        if ($booking->booking_status !== BookingStatus::CheckedIn) {
-            throw new \Exception('Only checked-in bookings can be checked out.');
-        }
+        return DB::transaction(function () use ($booking) {
+            $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
 
-        if ($booking->payment_status === PaymentStatus::Unpaid || $booking->payment_status === PaymentStatus::Partial) {
-            throw new \Exception('Cannot check-out before payment is completed.');
-        }
+            if ($booking->booking_status !== BookingStatus::CheckedIn) {
+                throw new \Exception('Only checked-in bookings can be checked out.');
+            }
 
-        $selectedRoomIds = $booking->selectedRoomIds();
-        $rooms = Room::whereIn('id', $selectedRoomIds)->get();
-        if ($rooms->count() !== count($selectedRoomIds)) {
-            throw new \Exception('One or more selected rooms or ballrooms no longer exist.');
-        }
+            if ((float) $booking->grand_total > $booking->totalPaid()) {
+                throw new \Exception('Cannot check-out before payment is completed.');
+            }
 
-        return DB::transaction(function () use ($booking, $rooms) {
+            $selectedRoomIds = $booking->selectedRoomIds();
+            $rooms = Room::whereIn('id', $selectedRoomIds)->get();
+            if ($rooms->count() !== count($selectedRoomIds)) {
+                throw new \Exception('One or more selected rooms or ballrooms no longer exist.');
+            }
+
             $booking->update([
                 'booking_status' => BookingStatus::CheckedOut,
+                'payment_status' => PaymentStatus::Paid,
                 'actual_check_out' => Carbon::now(),
                 'checked_out_by' => auth()->id()
             ]);

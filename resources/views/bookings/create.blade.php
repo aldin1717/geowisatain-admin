@@ -61,7 +61,7 @@
                 {{-- Booking Type --}}
                 <div>
                     <label for="booking_type" class="block text-sm font-medium text-stone-700 mb-1.5">Booking Type</label>
-                    <select name="booking_type" id="booking_type" class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <select name="booking_type" id="booking_type" x-model="bookingType" x-on:change="syncRoomSelection()" class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                         @foreach(\App\Enums\BookingType::cases() as $type)
                             <option value="{{ $type->value }}" @selected(old('booking_type', 'general') === $type->value)>{{ $type->label() }}</option>
                         @endforeach
@@ -90,25 +90,99 @@
                 </div>
 
                 <div class="md:col-span-2" x-show="selectionType !== 'ballroom'">
-                    <label class="block text-sm font-medium text-stone-700 mb-1.5">Pilih Kamar</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700">Pilih Kamar</label>
+                            <p class="mt-1 text-xs text-stone-500">Pilih lantai atau cari nomor kamar agar daftar tetap ringkas.</p>
+                        </div>
+                        <p class="text-sm font-medium text-primary-700">
+                            <span x-text="selectedRoomsCount"></span> kamar dipilih
+                        </p>
+                    </div>
+
+                    <div class="mb-3 flex flex-col gap-3 lg:flex-row">
+                        <label class="flex-1">
+                            <span class="sr-only">Cari nomor kamar</span>
+                            <input type="search" x-model.debounce.200ms="roomSearch" placeholder="Cari nomor kamar..."
+                                class="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500">
+                        </label>
+                        <label class="lg:w-56">
+                            <span class="sr-only">Filter tipe kamar</span>
+                            <select x-model="roomTypeFilter"
+                                class="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500">
+                                <option value="">Semua tipe kamar</option>
+                                @foreach($roomTypes as $roomTypeName)
+                                    <option value="{{ $roomTypeName }}">{{ $roomTypeName }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="mb-3 flex gap-2 overflow-x-auto pb-1">
+                        <button type="button" x-on:click="roomFloor = 'all'"
+                            x-bind:class="roomFloor === 'all' ? 'border-primary-600 bg-primary-600 text-white' : 'border-stone-300 bg-white text-stone-600 hover:bg-stone-50'"
+                            class="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors">
+                            Semua Lantai
+                        </button>
+                        @foreach($roomFloors as $floor)
+                            <button type="button" x-on:click="roomFloor = '{{ $floor }}'"
+                                x-bind:class="roomFloor === '{{ $floor }}' ? 'border-primary-600 bg-primary-600 text-white' : 'border-stone-300 bg-white text-stone-600 hover:bg-stone-50'"
+                                class="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors">
+                                Lantai {{ $floor }}
+                            </button>
+                        @endforeach
+                    </div>
+
+                    <div class="max-h-96 overflow-y-auto rounded-lg border border-stone-200 bg-stone-50 p-3">
+                        @php
+                            $roomStatusColors = [
+                                'available' => 'bg-emerald-100 text-emerald-800',
+                                'reserved' => 'bg-blue-100 text-blue-800',
+                                'occupied' => 'bg-amber-100 text-amber-800',
+                                'dirty' => 'bg-orange-100 text-orange-800',
+                                'cleaning' => 'bg-cyan-100 text-cyan-800',
+                                'maintenance' => 'bg-purple-100 text-purple-800',
+                                'out_of_service' => 'bg-red-100 text-red-800',
+                            ];
+                            $unbookableStatuses = ['cleaning', 'maintenance', 'out_of_service'];
+                        @endphp
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         @forelse($hotelRooms as $room)
-                            <label class="flex items-start gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
+                            @php
+                                $roomStatus = $room->status->value;
+                                $roomStatusColor = $roomStatusColors[$roomStatus] ?? 'bg-stone-100 text-stone-700';
+                                $roomUnavailable = in_array($roomStatus, $unbookableStatuses, true);
+                            @endphp
+                            <label x-show="roomMatches($el)"
+                                data-floor="{{ $room->floor }}"
+                                data-room-number="{{ $room->room_number }}"
+                                data-room-type="{{ $room->roomType->name }}"
+                                class="flex items-start gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 transition-colors {{ $roomUnavailable ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-primary-300 hover:bg-primary-50' }}">
                                 <input type="checkbox" name="room_ids[]" value="{{ $room->id }}"
                                     data-price="{{ (int)$room->price_per_night }}"
                                     data-capacity="{{ $room->capacity }}"
                                     data-category="room"
+                                    @disabled($roomUnavailable)
                                     @checked(in_array((string) $room->id, (array) old('room_ids', [])))
                                     x-on:change="syncRoomSelection()">
-                                <span>
-                                    Room {{ $room->room_number }} - {{ $room->roomType->name }}
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex flex-wrap items-center gap-2">
+                                        <span class="font-medium">Room {{ $room->room_number }} - {{ $room->roomType->name }}</span>
+                                        <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $roomStatusColor }}">
+                                            {{ $room->status->label() }}
+                                        </span>
+                                    </span>
                                     <br>
                                     <small class="text-stone-500">Kapasitas {{ $room->capacity }} orang · Rp {{ number_format($room->price_per_night, 0, ',', '.') }}/malam</small>
+                                    @if($roomUnavailable)
+                                        <small class="block text-red-600">Tidak dapat dipesan saat ini</small>
+                                    @endif
                                 </span>
                             </label>
                         @empty
                             <p class="text-sm text-stone-500">Belum ada kamar aktif pada data master.</p>
                         @endforelse
+                        </div>
                     </div>
                 </div>
 
@@ -116,14 +190,28 @@
                     <label class="block text-sm font-medium text-stone-700 mb-1.5">Pilih Ballroom</label>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         @forelse($ballrooms as $ballroom)
-                            <label class="flex items-start gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
+                            @php
+                                $ballroomStatus = $ballroom->status->value;
+                                $ballroomStatusColor = $roomStatusColors[$ballroomStatus] ?? 'bg-stone-100 text-stone-700';
+                                $ballroomUnavailable = in_array($ballroomStatus, $unbookableStatuses, true);
+                            @endphp
+                            <label class="flex items-start gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 {{ $ballroomUnavailable ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' }}">
                                 <input type="checkbox" name="room_ids[]" value="{{ $ballroom->id }}"
                                     data-category="ballroom"
+                                    @disabled($ballroomUnavailable)
                                     @checked(in_array((string) $ballroom->id, (array) old('room_ids', [])))>
-                                <span>
-                                    Ballroom {{ $ballroom->room_number }} - {{ $ballroom->roomType->name }}
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex flex-wrap items-center gap-2">
+                                        <span class="font-medium">Ballroom {{ $ballroom->room_number }} - {{ $ballroom->roomType->name }}</span>
+                                        <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $ballroomStatusColor }}">
+                                            {{ $ballroom->status->label() }}
+                                        </span>
+                                    </span>
                                     <br>
                                     <small class="text-stone-500">Kapasitas {{ $ballroom->capacity }} orang</small>
+                                    @if($ballroomUnavailable)
+                                        <small class="block text-red-600">Tidak dapat dipesan saat ini</small>
+                                    @endif
                                 </span>
                             </label>
                         @empty
@@ -317,9 +405,14 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('bookingForm', () => ({
                 selectionType: '{{ old('selection_type', 'room') }}',
+                bookingType: '{{ old('booking_type', 'general') }}',
                 checkInDate: '{{ old('check_in_date') }}',
                 checkOutDate: '{{ old('check_out_date') }}',
                 numGuests: '{{ old('num_guests', 1) }}',
+                roomFloor: 'all',
+                roomSearch: '',
+                roomTypeFilter: '',
+                selectedRoomsCount: 0,
                 discount: {{ old('discount', 0) }},
                 tax: {{ old('tax', 0) }},
                 additionalCharges: @js(old('additional_charge_breakdown', [['name' => '', 'amount' => '']])),
@@ -342,8 +435,17 @@
                         }
                     });
 
-                    this.roomRate = totalPrice;
+                    this.roomRate = this.bookingType === 'diklat' ? 0 : totalPrice;
                     this.maxCapacity = totalCapacity > 0 ? totalCapacity : null;
+                    this.selectedRoomsCount = checkedRooms.filter((room) => room.dataset.category === 'room').length;
+                },
+
+                roomMatches(card) {
+                    const floorMatches = this.roomFloor === 'all' || card.dataset.floor === this.roomFloor;
+                    const numberMatches = card.dataset.roomNumber.toLowerCase().includes(this.roomSearch.trim().toLowerCase());
+                    const typeMatches = !this.roomTypeFilter || card.dataset.roomType === this.roomTypeFilter;
+
+                    return floorMatches && numberMatches && typeMatches;
                 },
 
                 syncSelectionType() {

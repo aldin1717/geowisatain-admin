@@ -92,7 +92,7 @@
                         </div>
                         <div>
                             <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Booking Type</p>
-                            <p class="mt-1 text-stone-900">{{ $booking->booking_type ? $booking->booking_type->label() : 'Umum' }}</p>
+                            <p class="mt-1 text-stone-900">{{ $booking->booking_type?->label() ?? 'Umum' }}</p>
                         </div>
                         <div>
                             <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Created By</p>
@@ -150,22 +150,6 @@
                             <p class="font-medium text-stone-900">
                                 <a href="{{ route('guests.show', $booking->guest) }}" class="text-primary-700 hover:underline">{{ $booking->guest->full_name }}</a>
                             </p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-stone-500">Identity</p>
-                            <p class="text-sm text-stone-900">
-                            @if($booking->guest->identity_type)
-                                {{ $booking->guest->identity_type->label() }}
-                            @endif
-                            @if($booking->guest->identity_number)
-                                @if($booking->guest->identity_type)
-                                    -
-                                @endif
-                                {{ $booking->guest->identity_number }}
-                            @elseif(! $booking->guest->identity_type)
-                                —
-                            @endif
-                        </p>
                         </div>
                         <div>
                             <p class="text-xs text-stone-500">Contact</p>
@@ -303,7 +287,7 @@
 
                             <div>
                                 <label for="amount" class="block text-sm font-medium text-stone-700 mb-1">Amount</label>
-                                <input id="amount" name="amount" type="number" step="0.01" min="0.01" max="{{ $outstanding }}" value="{{ old('amount', number_format($outstanding, 2, '.', '')) }}" required class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                <input id="amount" name="amount" type="number" step="1" min="1" max="{{ $outstanding }}" value="{{ old('amount', number_format($outstanding, 0, '', '')) }}" required class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                             </div>
 
                             <div>

@@ -9,6 +9,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomTypeController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -16,7 +17,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -54,5 +55,10 @@ Route::middleware('auth')->group(function () {
         Route::get('transactions', [InventoryController::class, 'transactions'])->name('transactions.index');
         Route::get('transactions/create', [InventoryController::class, 'createTransaction'])->name('transactions.create');
         Route::post('transactions', [InventoryController::class, 'storeTransaction'])->name('transactions.store');
+    });
+
+    Route::middleware('role:admin')->group(function () {
+        Route::resource('users', UserController::class)->except(['show', 'destroy']);
+        Route::post('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
     });
 });

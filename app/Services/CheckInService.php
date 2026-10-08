@@ -11,23 +11,43 @@ use Carbon\Carbon;
 
 class CheckInService
 {
+    public function __construct(protected RoomAvailabilityService $availabilityService) {}
+
     public function process(Booking $booking)
     {
-        if ($booking->booking_status !== BookingStatus::Confirmed) {
-            throw new \Exception('Only confirmed bookings can be checked in.');
-        }
+        return DB::transaction(function () use ($booking) {
+            $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
 
-        $selectedRoomIds = $booking->selectedRoomIds();
-        $rooms = Room::whereIn('id', $selectedRoomIds)->get();
-        if ($rooms->count() !== count($selectedRoomIds)) {
-            throw new \Exception('One or more selected rooms or ballrooms no longer exist.');
-        }
+            if ($booking->booking_status !== BookingStatus::Confirmed) {
+                throw new \Exception('Only confirmed bookings can be checked in.');
+            }
 
-        if ($rooms->contains(fn ($room) => in_array($room->status, [RoomStatus::Occupied, RoomStatus::Maintenance, RoomStatus::OutOfService]))) {
-            throw new \Exception('One or more selected rooms or ballrooms are not available for check-in.');
-        }
+            $selectedRoomIds = $booking->selectedRoomIds();
+            $rooms = Room::whereIn('id', $selectedRoomIds)->lockForUpdate()->get();
+            if ($rooms->count() !== count($selectedRoomIds)) {
+                throw new \Exception('One or more selected rooms or ballrooms no longer exist.');
+            }
 
-        return DB::transaction(function () use ($booking, $rooms) {
+            foreach ($selectedRoomIds as $roomId) {
+                if (! $this->availabilityService->isAvailable(
+                    $roomId,
+                    $booking->check_in_date->toDateString(),
+                    $booking->check_out_date->toDateString(),
+                    $booking->id
+                )) {
+                    throw new \Exception('One or more selected rooms or ballrooms are not available for these dates.');
+                }
+            }
+
+            if ($rooms->contains(fn ($room) => in_array($room->status, [
+                RoomStatus::Occupied,
+                RoomStatus::Cleaning,
+                RoomStatus::Maintenance,
+                RoomStatus::OutOfService,
+            ], true))) {
+                throw new \Exception('One or more selected rooms or ballrooms are not ready for check-in.');
+            }
+
             $booking->update([
                 'booking_status' => BookingStatus::CheckedIn,
                 'actual_check_in' => Carbon::now(),

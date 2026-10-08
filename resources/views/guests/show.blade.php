@@ -34,16 +34,6 @@
                         <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Gender</p>
                         <p class="mt-1 text-sm text-stone-900">{{ $guest->gender ? ucfirst($guest->gender) : '—' }}</p>
                     </div>
-                    <div>
-                        <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Identity</p>
-                        <p class="mt-1 text-sm text-stone-900">
-                            @if($guest->identity_type)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-stone-100 text-stone-700">{{ $guest->identity_type->label() }}</span>
-                            @endif
-                            {{ $guest->identity_number ?: '—' }}
-                        </p>
-                    </div>
-
                     @if($guest->phone)
                     <div>
                         <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Phone</p>

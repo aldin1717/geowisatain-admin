@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentStatus;
+use App\Models\Booking;
 use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +18,25 @@ class ReportController extends Controller
             ->with(['booking.guest', 'booking.room', 'billingGroup.payerGuest', 'billingGroup.bookings:id,billing_group_id'])
             ->orderByDesc('payment_date')
             ->get();
+        $bookings = Booking::query()
+            ->with(['guest', 'room', 'rooms'])
+            ->where(function (Builder $query) use ($start, $end): void {
+                $query->whereBetween('check_in_date', [$start->toDateString(), $end->toDateString()])
+                    ->orWhereBetween('created_at', [$start, $end]);
+            })
+            ->orderBy('check_in_date')
+            ->orderBy('booking_number')
+            ->get();
+        $bookingsWithPayments = $payments->flatMap(function (Payment $payment) {
+            if ($payment->billingGroup) {
+                return $payment->billingGroup->bookings->pluck('id');
+            }
+
+            return $payment->booking_id ? [$payment->booking_id] : [];
+        })->unique();
+        $bookingsWithoutPeriodPayments = $bookings
+            ->reject(fn (Booking $booking) => $bookingsWithPayments->contains($booking->id))
+            ->values();
 
         $dailyPayments = $payments->groupBy(fn (Payment $payment) => $payment->payment_date->toDateString());
         $dailyReport = [];
@@ -42,6 +62,7 @@ class ReportController extends Controller
             'start' => $start,
             'end' => $end,
             'payments' => $payments,
+            'bookingsWithoutPeriodPayments' => $bookingsWithoutPeriodPayments,
             'totalIncome' => (float) $payments->sum('amount'),
             'transactionCount' => $payments->count(),
             'bookingCount' => $payments->flatMap(function (Payment $payment) {
@@ -70,7 +91,7 @@ class ReportController extends Controller
         return response()->streamDownload(function () use ($payments) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['Tanggal', 'Nomor Pembayaran', 'Nomor Booking', 'Nama Tamu', 'Nomor Kamar', 'Metode', 'Nominal', 'Catatan'], ';', '"', '\\');
+            fputcsv($output, ['Tanggal', 'Nomor Pembayaran', 'Nomor Booking', 'Nama Tamu', 'Tipe Booking', 'Nomor Kamar', 'Metode', 'Nominal', 'Catatan'], ';', '"', '\\');
 
             foreach ($payments as $payment) {
                 fputcsv($output, [
@@ -78,6 +99,7 @@ class ReportController extends Controller
                     $payment->payment_number,
                     $payment->billingGroup?->invoice_number ?? $payment->booking?->booking_number,
                     $this->safeCsvText($payment->billingGroup?->payerGuest?->full_name ?? $payment->booking?->guest?->full_name),
+                    $payment->booking?->booking_type?->label() ?? '',
                     $this->safeCsvText($payment->booking?->room?->room_number),
                     $payment->payment_method->label(),
                     $payment->amount,

@@ -16,25 +16,22 @@ class UserSeeder extends Seeder
         $receptionistRole = Role::where('slug', 'receptionist')->first();
         $warehouseRole = Role::where('slug', 'warehouse')->first();
 
-        User::create([
+        User::firstOrCreate(['email' => 'admin@hotel.test'], [
             'name' => 'Super Admin',
-            'email' => 'admin@hotel.test',
             'password' => Hash::make('password'),
             'role_id' => $adminRole->id,
             'is_active' => true,
         ]);
 
-        User::create([
+        User::firstOrCreate(['email' => 'receptionist@hotel.test'], [
             'name' => 'Front Desk',
-            'email' => 'receptionist@hotel.test',
             'password' => Hash::make('password'),
             'role_id' => $receptionistRole->id,
             'is_active' => true,
         ]);
 
-        User::create([
+        User::firstOrCreate(['email' => 'warehouse@hotel.test'], [
             'name' => 'Inventory Manager',
-            'email' => 'warehouse@hotel.test',
             'password' => Hash::make('password'),
             'role_id' => $warehouseRole->id,
             'is_active' => true,

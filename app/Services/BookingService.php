@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\BookingStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\RoomStatus;
 use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Room;
@@ -20,9 +22,21 @@ class BookingService
                 throw new \Exception('Select at least one room or ballroom.');
             }
 
-            $rooms = Room::with('roomType')->whereIn('id', $selectedRoomIds)->where('is_active', true)->get();
+            $rooms = Room::with('roomType')
+                ->whereIn('id', $selectedRoomIds)
+                ->where('is_active', true)
+                ->lockForUpdate()
+                ->get();
             if ($rooms->count() !== count($selectedRoomIds)) {
                 throw new \Exception('One of the selected rooms or ballrooms is no longer active.');
+            }
+
+            if ($rooms->contains(fn (Room $room) => in_array($room->status, [
+                RoomStatus::Cleaning,
+                RoomStatus::Maintenance,
+                RoomStatus::OutOfService,
+            ], true))) {
+                throw new \Exception('Rooms that are being cleaned, under maintenance, or out of service cannot be booked.');
             }
 
             $primaryRoom = $rooms->firstWhere('id', $selectedRoomIds[0]);
@@ -41,20 +55,13 @@ class BookingService
                 throw new \Exception('Number of guests exceeds the total selected room capacity.');
             }
 
-            $guest = Guest::where('email', $data['guest_email'])->first()
-                ?? Guest::where('phone', $data['guest_phone'])->first();
             $guestData = [
                 'full_name' => $data['guest_full_name'],
                 'phone' => $data['guest_phone'],
                 'email' => $data['guest_email'],
                 'address' => $data['guest_address'] ?? null,
             ];
-
-            if ($guest) {
-                $guest->update($guestData);
-            } else {
-                $guest = Guest::create($guestData + ['guest_code' => $this->generateGuestCode()]);
-            }
+            $guest = Guest::create($guestData + ['guest_code' => $this->generateGuestCode()]);
 
             $date1 = new \DateTime($checkInDate);
             $date2 = new \DateTime($checkOutDate);
@@ -102,6 +109,7 @@ class BookingService
                 'ballroom_amount' => $ballroomAmount,
                 'grand_total' => $grandTotal,
                 'booking_status' => BookingStatus::Confirmed,
+                'payment_status' => $grandTotal <= 0 ? PaymentStatus::Paid : PaymentStatus::Unpaid,
                 'booking_type' => $bookingType,
                 'is_day_use' => $isDayUse,
                 'is_early_check_out' => (bool) ($data['is_early_check_out'] ?? false),

@@ -49,7 +49,7 @@
         </tr>
         <tr>
             <th>Type</th>
-            <td>{{ $booking->booking_type ? \App\Enums\BookingType::from($booking->booking_type)->label() : 'Umum' }}</td>
+            <td>{{ $booking->booking_type?->label() ?? 'Umum' }}</td>
         </tr>
     </table>
 

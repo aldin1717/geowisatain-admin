@@ -88,7 +88,7 @@
                         </div>
                         <div>
                             <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Booking Type</p>
-                            <p class="mt-1 text-stone-900">{{ $booking->booking_type ? \App\Enums\BookingType::from($booking->booking_type)->label() : 'Umum' }}</p>
+                            <p class="mt-1 text-stone-900">{{ $booking->booking_type?->label() ?? 'Umum' }}</p>
                         </div>
                         <div>
                             <p class="text-xs font-medium text-stone-500 uppercase tracking-wider">Created By</p>
@@ -146,22 +146,6 @@
                             <p class="font-medium text-stone-900">
                                 <a href="{{ route('guests.show', $booking->guest) }}" class="text-primary-700 hover:underline">{{ $booking->guest->full_name }}</a>
                             </p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-stone-500">Identity</p>
-                            <p class="text-sm text-stone-900">
-                            @if($booking->guest->identity_type)
-                                {{ $booking->guest->identity_type->label() }}
-                            @endif
-                            @if($booking->guest->identity_number)
-                                @if($booking->guest->identity_type)
-                                    -
-                                @endif
-                                {{ $booking->guest->identity_number }}
-                            @elseif(! $booking->guest->identity_type)
-                                —
-                            @endif
-                        </p>
                         </div>
                         <div>
                             <p class="text-xs text-stone-500">Contact</p>

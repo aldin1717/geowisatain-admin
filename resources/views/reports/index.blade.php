@@ -85,36 +85,81 @@
 
     <section class="overflow-hidden rounded-lg border border-stone-200 bg-white">
         <div class="border-b border-stone-200 px-5 py-4">
-            <h2 class="font-semibold text-stone-900">Payment Transactions</h2>
+            <h2 class="font-semibold text-stone-900">Booking & Payment Activity</h2>
+            <p class="mt-1 text-sm text-stone-500">Payments are listed by transaction. Bookings without a payment in this period are included once.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-stone-200">
                 <thead class="bg-stone-50">
                     <tr>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-stone-500">Date</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-stone-500">Activity</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-stone-500">Payment No.</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-stone-500">Booking / Guest</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-stone-500">Booking Type</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-stone-500">Room(s)</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-stone-500">Status</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-stone-500">Method</th>
-                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase text-stone-500">Amount</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase text-stone-500">Amount / Total</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-stone-100 bg-white">
                     @forelse($payments as $payment)
                         <tr>
                             <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">{{ $payment->payment_date->format('d M Y, H:i') }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">Payment</td>
                             <td class="whitespace-nowrap px-5 py-3 text-sm font-medium text-primary-700">{{ $payment->payment_number }}</td>
                             <td class="px-5 py-3 text-sm">
                                 <p class="font-medium text-stone-800">{{ $payment->billingGroup?->invoice_number ?? $payment->booking?->booking_number ?? 'Booking deleted' }}</p>
                                 <p class="text-stone-500">{{ $payment->billingGroup?->payerGuest?->full_name ?? $payment->booking?->guest?->full_name ?? '-' }}</p>
                             </td>
+                            <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">
+                                {{ $payment->billingGroup ? 'Tagihan Gabungan' : ($payment->booking?->booking_type?->label() ?? '—') }}
+                            </td>
+                            <td class="px-5 py-3 text-sm text-stone-600">{{ $payment->booking?->room?->room_number ?? '—' }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">
+                                {{ $payment->booking?->booking_status?->label() ?? '—' }}
+                                @if($payment->booking)
+                                    <span class="text-stone-400">·</span>
+                                    {{ $payment->booking->payment_status?->label() ?? '—' }}
+                                @endif
+                            </td>
                             <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">{{ $payment->payment_method->label() }}</td>
                             <td class="whitespace-nowrap px-5 py-3 text-right text-sm font-medium text-stone-900">Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="5" class="px-5 py-10 text-center text-sm text-stone-500">No payment transactions in this period.</td>
-                        </tr>
+                        @if($bookingsWithoutPeriodPayments->isEmpty())
+                            <tr>
+                                <td colspan="9" class="px-5 py-10 text-center text-sm text-stone-500">No booking or payment activity in this period.</td>
+                            </tr>
+                        @endif
                     @endforelse
+                    @foreach($bookingsWithoutPeriodPayments as $booking)
+                        @php
+                            $selectedRooms = $booking->rooms->isNotEmpty() ? $booking->rooms : collect([$booking->room])->filter();
+                            $bookingActivityDate = $booking->check_in_date->between($start, $end)
+                                ? $booking->check_in_date
+                                : $booking->created_at;
+                        @endphp
+                        <tr>
+                            <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">{{ $bookingActivityDate->format('d M Y') }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">Booking</td>
+                            <td class="px-5 py-3 text-sm text-stone-400">—</td>
+                            <td class="px-5 py-3 text-sm">
+                                <p class="font-medium text-stone-800">{{ $booking->booking_number }}</p>
+                                <p class="text-stone-500">{{ $booking->guest?->full_name ?? '-' }}</p>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">{{ $booking->booking_type?->label() ?? 'Umum' }}</td>
+                            <td class="px-5 py-3 text-sm text-stone-600">{{ $selectedRooms->pluck('room_number')->join(', ') ?: '—' }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">
+                                {{ $booking->booking_status?->label() ?? $booking->booking_status }}
+                                <span class="text-stone-400">·</span>
+                                {{ $booking->payment_status?->label() ?? $booking->payment_status }}
+                            </td>
+                            <td class="px-5 py-3 text-sm text-stone-400">No payment in period</td>
+                            <td class="whitespace-nowrap px-5 py-3 text-right text-sm font-medium text-stone-900">Rp {{ number_format($booking->grand_total, 0, ',', '.') }}</td>
+                        </tr>
+                    @endforeach
                 </tbody>
             </table>
         </div>

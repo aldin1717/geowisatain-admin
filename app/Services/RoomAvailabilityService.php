@@ -13,7 +13,11 @@ class RoomAvailabilityService
     {
         $room = Room::findOrFail($roomId);
 
-        if (in_array($room->status, [RoomStatus::Maintenance, RoomStatus::OutOfService])) {
+        if (in_array($room->status, [
+            RoomStatus::Cleaning,
+            RoomStatus::Maintenance,
+            RoomStatus::OutOfService,
+        ], true)) {
             return false;
         }
 
@@ -22,14 +26,8 @@ class RoomAvailabilityService
                 ->orWhereHas('rooms', fn ($rooms) => $rooms->where('rooms.id', $roomId));
         })
             ->whereIn('booking_status', [BookingStatus::Confirmed, BookingStatus::CheckedIn])
-            ->where(function ($q) use ($checkIn, $checkOut) {
-                $q->whereBetween('check_in_date', [$checkIn, $checkOut])
-                  ->orWhereBetween('check_out_date', [$checkIn, $checkOut])
-                  ->orWhere(function ($q2) use ($checkIn, $checkOut) {
-                      $q2->where('check_in_date', '<=', $checkIn)
-                         ->where('check_out_date', '>=', $checkOut);
-                  });
-            });
+            ->where('check_in_date', '<', $checkOut)
+            ->where('check_out_date', '>', $checkIn);
 
         if ($excludeBookingId) {
             $query->where('id', '!=', $excludeBookingId);

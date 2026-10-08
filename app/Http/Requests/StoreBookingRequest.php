@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\RoomStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -83,6 +84,16 @@ class StoreBookingRequest extends FormRequest
 
             if ($selectedRooms->count() !== count(array_unique($roomIds))) {
                 $validator->errors()->add('room_ids', 'Select active rooms or ballrooms from the list.');
+
+                return;
+            }
+
+            if ($selectedRooms->contains(fn ($room) => in_array($room->status, [
+                RoomStatus::Cleaning,
+                RoomStatus::Maintenance,
+                RoomStatus::OutOfService,
+            ], true))) {
+                $validator->errors()->add('room_ids', 'Rooms that are being cleaned, under maintenance, or out of service cannot be booked.');
 
                 return;
             }

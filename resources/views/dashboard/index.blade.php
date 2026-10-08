@@ -6,7 +6,7 @@
     <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <p class="text-sm font-medium text-primary-700">{{ now()->format('l, d F Y') }}</p>
-            <h1 class="mt-1 text-2xl font-semibold tracking-tight text-stone-900">Welcome back, {{ explode(' ', $user->name)[0] }}!</h1>
+            <h1 class="mt-1 text-2xl font-semibold tracking-tight text-stone-900">Welcome back, {{ $user->name }}!</h1>
             <p class="mt-1 text-sm text-stone-500">Here is today's overview for {{ config('app.name', 'Geowisata Inn') }}.</p>
         </div>
         <div class="flex flex-wrap gap-3">
@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 {{ $canManageHotel && $canManageInventory ? 'xl:grid-cols-4' : ($canManageHotel ? 'xl:grid-cols-3' : 'xl:grid-cols-1') }}">
         @if($canManageHotel)
             <a href="{{ route('bookings.index', ['status' => 'confirmed', 'check_in_date' => today()->toDateString()]) }}" class="group rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <div class="flex items-center justify-between">
@@ -73,7 +73,7 @@
         @endif
     </div>
 
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div class="grid grid-cols-1 gap-6 {{ $canManageHotel && $canManageInventory ? 'xl:grid-cols-2' : 'xl:grid-cols-1' }}">
         @if($canManageHotel)
             <section class="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
                 <div class="flex items-center justify-between border-b border-stone-200 px-5 py-4">

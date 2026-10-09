@@ -68,13 +68,6 @@
                     </select>
                 </div>
 
-                <div>
-                    <label class="flex items-center gap-2 text-sm font-medium text-stone-700">
-                        <input type="checkbox" name="is_day_use" value="1" @checked(old('is_day_use'))>
-                        Day Use / Ballroom
-                    </label>
-                </div>
-
                 {{-- Room / Ballroom Selection --}}
                 <div class="md:col-span-2">
                     <label for="selection_type" class="block text-sm font-medium text-stone-700 mb-1.5">Pilih Kamar / Ballroom <span class="text-red-500">*</span></label>
@@ -324,12 +317,6 @@
                     @endforeach
                 </div>
 
-                <div>
-                    <label for="ballroom_amount" class="block text-sm font-medium text-stone-700 mb-1.5">Ballroom / Day Use (Rp)</label>
-                    <input type="number" name="ballroom_amount" id="ballroom_amount" min="0" step="1" value="{{ old('ballroom_amount', 0) }}"
-                        class="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                </div>
-
                 {{-- Notes --}}
                 <div class="md:col-span-2">
                     <label for="notes" class="block text-sm font-medium text-stone-700 mb-1.5">Notes</label>
@@ -373,10 +360,6 @@
                         <div class="flex justify-between text-stone-600" x-show="additionalCharge > 0">
                             <span>Total Biaya Tambahan:</span>
                             <span>+ Rp <span x-text="formatMoney(additionalCharge)"></span></span>
-                        </div>
-                        <div class="flex justify-between text-stone-600" x-show="Number(document.getElementById('ballroom_amount')?.value || 0) > 0">
-                            <span>Ballroom / Day Use:</span>
-                            <span>+ Rp <span x-text="formatMoney(Number(document.getElementById('ballroom_amount')?.value || 0))"></span></span>
                         </div>
                         <div class="flex justify-between border-t border-stone-200 pt-2 mt-2 text-base font-bold text-stone-900">
                             <span>Estimated Grand Total:</span>
@@ -478,8 +461,7 @@
 
                 get grandTotal() {
                     const subtotal = this.roomRate * this.numNights;
-                    const ballroomAmount = Number(document.getElementById('ballroom_amount')?.value || 0);
-                    return subtotal - (Number(this.discount) || 0) + (Number(this.tax) || 0) + (Number(this.additionalCharge) || 0) + ballroomAmount;
+                    return subtotal - (Number(this.discount) || 0) + (Number(this.tax) || 0) + (Number(this.additionalCharge) || 0);
                 },
 
                 formatMoney(amount) {

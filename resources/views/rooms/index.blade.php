@@ -32,9 +32,18 @@
                 </select>
             </div>
 
+            <div class="w-48">
+                <select name="status" aria-label="Filter by room status" class="block w-full rounded-lg border border-stone-300 py-2 pl-3 pr-10 text-sm text-stone-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Statuses</option>
+                    @foreach($roomStatuses as $status)
+                        <option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             <button type="submit" class="px-4 py-2 bg-stone-100 text-stone-700 text-sm font-medium rounded-lg hover:bg-stone-200 border border-stone-300 transition-colors">Filter</button>
             
-            @if(request('search') || request('room_type_id'))
+            @if(request('search') || request('room_type_id') || request('status'))
                 <a href="{{ route('rooms.index') }}" class="px-4 py-2 text-sm text-stone-500 hover:text-stone-700 transition-colors flex items-center">Clear</a>
             @endif
         </form>

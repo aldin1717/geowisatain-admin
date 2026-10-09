@@ -2,17 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RoomStatus;
 use App\Http\Requests\StoreRoomRequest;
 use App\Http\Requests\UpdateRoomRequest;
 use App\Models\Room;
 use App\Models\RoomType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class RoomController extends Controller
 {
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'status' => ['nullable', Rule::in(array_map(
+                fn (RoomStatus $status) => $status->value,
+                RoomStatus::cases()
+            ))],
+        ]);
+
         $query = Room::with('roomType');
 
         if ($search = $request->input('search')) {
@@ -23,13 +32,18 @@ class RoomController extends Controller
             $query->where('room_type_id', $type);
         }
 
+        if ($status = $validated['status'] ?? null) {
+            $query->where('status', $status);
+        }
+
         $rooms = $query->latest()
             ->paginate(15)
             ->withQueryString();
 
         $roomTypes = RoomType::orderBy('name')->get();
+        $roomStatuses = RoomStatus::cases();
 
-        return view('rooms.index', compact('rooms', 'roomTypes'));
+        return view('rooms.index', compact('rooms', 'roomTypes', 'roomStatuses'));
     }
 
     public function create()

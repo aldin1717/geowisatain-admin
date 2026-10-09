@@ -22,6 +22,10 @@ class CheckInService
                 throw new \Exception('Only confirmed bookings can be checked in.');
             }
 
+            if ((float) $booking->grand_total > $booking->totalPaid()) {
+                throw new \Exception('Cannot check-in before payment is completed.');
+            }
+
             $selectedRoomIds = $booking->selectedRoomIds();
             $rooms = Room::whereIn('id', $selectedRoomIds)->lockForUpdate()->get();
             if ($rooms->count() !== count($selectedRoomIds)) {

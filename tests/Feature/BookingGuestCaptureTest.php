@@ -37,7 +37,11 @@ class BookingGuestCaptureTest extends TestCase
             ->assertSee('guest_phone')
             ->assertSee('guest_email')
             ->assertSee('guest_address')
-            ->assertDontSee('name="guest_id"');
+            ->assertDontSee('name="guest_id"')
+            ->assertDontSee('name="is_day_use"')
+            ->assertDontSee('Day Use / Ballroom')
+            ->assertDontSee('name="ballroom_amount"')
+            ->assertDontSee('Ballroom / Day Use (Rp)');
 
         $response = $this->post(route('bookings.store'), [
             'guest_full_name' => 'Dewi Lestari',

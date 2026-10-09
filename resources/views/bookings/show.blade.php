@@ -3,6 +3,10 @@
 @section('title', 'Booking ' . $booking->booking_number)
 
 @section('content')
+    @php
+        $totalPaid = $booking->totalPaid();
+        $outstanding = max((float) $booking->grand_total - $totalPaid, 0);
+    @endphp
     <div x-data="{ confirmationOpen: {{ $errors->has('early_check_out_reason') ? 'true' : 'false' }}, confirmationType: '{{ $errors->has('early_check_out_reason') ? 'early-check-out' : '' }}' }">
     <div class="mb-6">
         <div class="flex items-center gap-2 text-sm text-stone-500 mb-2">
@@ -18,10 +22,16 @@
                 @if($booking->booking_status->value === 'confirmed')
                     <form id="checkInForm" method="POST" action="{{ route('bookings.check-in', $booking) }}">
                         @csrf
-                        <button type="button" @click="confirmationType = 'check-in'; confirmationOpen = true" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
-                            Process Check-in
-                        </button>
+                        @if($outstanding <= 0)
+                            <button type="button" @click="confirmationType = 'check-in'; confirmationOpen = true" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3-3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                                Process Check-in
+                            </button>
+                        @else
+                            <button type="button" disabled title="Lunasi pembayaran sebelum check-in" class="inline-flex cursor-not-allowed items-center gap-2 rounded-lg bg-stone-300 px-4 py-2 text-sm font-medium text-stone-500">
+                                Process Check-in
+                            </button>
+                        @endif
                     </form>
                 @endif
 
@@ -189,15 +199,16 @@
 
         {{-- Payment Summary --}}
         <div class="lg:col-span-1 space-y-6">
-            @php
-                $totalPaid = $booking->totalPaid();
-                $outstanding = max((float) $booking->grand_total - $totalPaid, 0);
-            @endphp
-
             @if($booking->billingGroup)
                 <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
                     Booking ini tergabung dalam tagihan <a class="font-semibold underline" href="{{ route('billing-groups.show', $booking->billingGroup) }}">{{ $booking->billingGroup->invoice_number }}</a>.
                     Pembayaran dicatat satu kali dari halaman tagihan gabungan oleh {{ $booking->billingGroup->payerGuest->full_name }}.
+                </div>
+            @endif
+
+            @if($booking->booking_status->value === 'confirmed' && $outstanding > 0)
+                <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    Pelunasan diperlukan sebelum check-in. Sisa tagihan: Rp {{ number_format($outstanding, 0, ',', '.') }}.
                 </div>
             @endif
 

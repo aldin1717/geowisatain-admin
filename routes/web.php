@@ -8,6 +8,7 @@ use App\Http\Controllers\GuestController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoomController;
+use App\Http\Controllers\RoomCalendarController;
 use App\Http\Controllers\RoomTypeController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\UserController;
@@ -28,6 +29,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::resource('guests', GuestController::class)->only(['index', 'show']);
         Route::resource('room-types', RoomTypeController::class);
         Route::resource('rooms', RoomController::class);
+        Route::get('room-calendar', [RoomCalendarController::class, 'index'])->name('room-calendar.index');
 
         Route::resource('bookings', BookingController::class);
         Route::post('bookings/{booking}/check-in', [BookingController::class, 'checkIn'])->name('bookings.check-in');

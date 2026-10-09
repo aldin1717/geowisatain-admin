@@ -118,16 +118,10 @@
                                 <p class="text-stone-500">{{ $payment->billingGroup?->payerGuest?->full_name ?? $payment->booking?->guest?->full_name ?? '-' }}</p>
                             </td>
                             <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">
-                                {{ $payment->billingGroup ? 'Tagihan Gabungan' : ($payment->booking?->booking_type?->label() ?? '—') }}
+                                {{ $paymentReportDetails[$payment->id]['booking_type'] }}
                             </td>
-                            <td class="px-5 py-3 text-sm text-stone-600">{{ $payment->booking?->room?->room_number ?? '—' }}</td>
-                            <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">
-                                {{ $payment->booking?->booking_status?->label() ?? '—' }}
-                                @if($payment->booking)
-                                    <span class="text-stone-400">·</span>
-                                    {{ $payment->booking->payment_status?->label() ?? '—' }}
-                                @endif
-                            </td>
+                            <td class="px-5 py-3 text-sm text-stone-600">{{ $paymentReportDetails[$payment->id]['rooms'] }}</td>
+                            <td class="px-5 py-3 text-sm text-stone-600">{{ $paymentReportDetails[$payment->id]['status'] }}</td>
                             <td class="whitespace-nowrap px-5 py-3 text-sm text-stone-600">{{ $payment->payment_method->label() }}</td>
                             <td class="whitespace-nowrap px-5 py-3 text-right text-sm font-medium text-stone-900">Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>
                         </tr>

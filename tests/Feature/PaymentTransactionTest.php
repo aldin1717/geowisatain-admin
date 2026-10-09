@@ -135,11 +135,14 @@ class PaymentTransactionTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->post(route('bookings.payments.store', $booking), [
-                'amount' => 1000000,
-                'payment_method' => PaymentMethod::Transfer->value,
-                'notes' => 'Full payment',
-            ])
+            ->post(route('shifts.open'), ['attendant_name' => 'Petugas Pagi', 'opening_cash' => 0])
+            ->assertRedirect();
+
+        $this->post(route('bookings.payments.store', $booking), [
+            'amount' => 1000000,
+            'payment_method' => PaymentMethod::Transfer->value,
+            'notes' => 'Full payment',
+        ])
             ->assertRedirect();
 
         $booking->refresh();
@@ -441,6 +444,9 @@ class PaymentTransactionTest extends TestCase
         $this->assertSame($billingGroup->id, $secondBooking->billing_group_id);
         $this->assertSame($payer->id, $billingGroup->payer_guest_id);
 
+        $this->post(route('shifts.open'), ['attendant_name' => 'Petugas Sore', 'opening_cash' => 100000])
+            ->assertRedirect();
+
         $this->post(route('billing-groups.payments.store', $billingGroup), [
             'amount' => 1500000,
             'payment_method' => PaymentMethod::Transfer->value,
@@ -465,5 +471,27 @@ class PaymentTransactionTest extends TestCase
             'booking_id' => $secondBooking->id,
             'amount' => '500000.00',
         ]);
+
+        $filters = ['period' => 'month', 'date' => now()->toDateString()];
+        $this->get(route('reports.index', $filters))
+            ->assertOk()
+            ->assertViewHas('paymentReportDetails', function (array $details) use ($billingGroup): bool {
+                $payment = $billingGroup->payments()->firstOrFail();
+
+                return $details[$payment->id]['booking_type'] === 'Umum';
+            })
+            ->assertSee('201, 202')
+            ->assertSee('BK-2026-00101: Confirmed · Paid')
+            ->assertSee('BK-2026-00102: Confirmed · Paid');
+
+        $exportResponse = $this->get(route('reports.export', $filters))->assertOk();
+        ob_start();
+        $exportResponse->sendContent();
+        $csvContent = ob_get_clean();
+
+        $this->assertStringContainsString('201, 202', $csvContent);
+        $this->assertStringContainsString(';Umum;201, 202;', $csvContent);
+        $this->assertStringNotContainsString(';Tagihan Gabungan;', $csvContent);
+        $this->assertStringContainsString('BK-2026-00101: Confirmed · Paid', $csvContent);
     }
 }

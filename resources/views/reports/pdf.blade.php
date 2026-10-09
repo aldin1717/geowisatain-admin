@@ -83,9 +83,9 @@
                         {{ $payment->billingGroup?->invoice_number ?? $payment->booking?->booking_number ?? 'Booking deleted' }}<br>
                         <span class="muted">{{ $payment->billingGroup?->payerGuest?->full_name ?? $payment->booking?->guest?->full_name ?? '-' }}</span>
                     </td>
-                    <td>{{ $payment->billingGroup ? 'Tagihan Gabungan' : ($payment->booking?->booking_type?->label() ?? '—') }}</td>
-                    <td>{{ $payment->booking?->room?->room_number ?? '—' }}</td>
-                    <td>{{ $payment->payment_status?->label() ?? $payment->payment_status }}</td>
+                    <td>{{ $paymentReportDetails[$payment->id]['booking_type'] }}</td>
+                    <td>{{ $paymentReportDetails[$payment->id]['rooms'] }}</td>
+                    <td>{{ $paymentReportDetails[$payment->id]['status'] }}</td>
                     <td>{{ $payment->payment_method?->label() ?? $payment->payment_method }}</td>
                     <td class="right">Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>
                 </tr>

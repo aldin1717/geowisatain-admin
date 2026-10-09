@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Booking;
-use App\Models\BillingGroup;
-use App\Models\Payment;
 use App\Enums\PaymentStatus;
+use App\Models\BillingGroup;
+use App\Models\Booking;
+use App\Models\Payment;
+use App\Models\Shift;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 class PaymentService
@@ -13,19 +15,21 @@ class PaymentService
     public function processPayment(Booking $booking, array $data)
     {
         return DB::transaction(function () use ($booking, $data) {
+            $shift = $this->activeShiftForPayment();
             $payment = Payment::create([
                 'payment_number' => $this->generatePaymentNumber(),
                 'booking_id' => $booking->id,
+                'shift_id' => $shift->id,
                 'payment_date' => now(),
                 'amount' => $data['amount'],
                 'payment_method' => $data['payment_method'],
                 'payment_status' => PaymentStatus::Paid,
                 'notes' => $data['notes'] ?? null,
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             $totalPaid = $booking->totalPaid();
-            
+
             if ($totalPaid >= $booking->grand_total) {
                 $booking->update(['payment_status' => PaymentStatus::Paid]);
             } else {
@@ -39,6 +43,7 @@ class PaymentService
     public function processBillingGroupPayment(BillingGroup $billingGroup, array $data): Payment
     {
         return DB::transaction(function () use ($billingGroup, $data) {
+            $shift = $this->activeShiftForPayment();
             $billingGroup = BillingGroup::query()->lockForUpdate()->findOrFail($billingGroup->id);
             $bookings = $billingGroup->bookings()->orderBy('id')->lockForUpdate()->get();
             $remaining = $billingGroup->outstandingAmount();
@@ -51,6 +56,7 @@ class PaymentService
             $payment = Payment::create([
                 'payment_number' => $this->generatePaymentNumber(),
                 'billing_group_id' => $billingGroup->id,
+                'shift_id' => $shift->id,
                 'payment_date' => now(),
                 'amount' => $amount,
                 'payment_method' => $data['payment_method'],
@@ -92,6 +98,20 @@ class PaymentService
 
             return $payment;
         });
+    }
+
+    private function activeShiftForPayment(): Shift
+    {
+        $shift = Shift::query()
+            ->whereNotNull('active_key')
+            ->lockForUpdate()
+            ->first();
+
+        if (! $shift) {
+            throw new DomainException('Buka shift aktif sebelum mencatat pembayaran.');
+        }
+
+        return $shift;
     }
 
     private function generatePaymentNumber(): string

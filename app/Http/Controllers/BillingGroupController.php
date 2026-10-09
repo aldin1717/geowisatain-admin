@@ -117,6 +117,8 @@ class BillingGroupController extends Controller
             $this->paymentService->processBillingGroupPayment($billingGroup, $validated);
         } catch (\InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['amount' => $exception->getMessage()]);
+        } catch (\DomainException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
         }
 
         return redirect()->route('billing-groups.show', $billingGroup)

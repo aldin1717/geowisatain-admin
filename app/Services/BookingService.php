@@ -119,6 +119,9 @@ class BookingService
             ]);
 
             $booking->rooms()->sync($selectedRoomIds);
+            $rooms
+                ->filter(fn (Room $room) => $room->status === RoomStatus::Available)
+                ->each->update(['status' => RoomStatus::Reserved]);
 
             return $booking;
         });

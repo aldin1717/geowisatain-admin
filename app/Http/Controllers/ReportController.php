@@ -8,6 +8,7 @@ use App\Models\Payment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
@@ -32,9 +33,17 @@ class ReportController extends Controller
     {
         [$period, $anchorDate, $start, $end] = $this->periodRange($request);
         $payments = $this->paymentsForRange($start, $end)
-            ->with(['booking.guest', 'booking.room', 'billingGroup.payerGuest', 'billingGroup.bookings:id,billing_group_id'])
+            ->with([
+                'booking.guest',
+                'booking.room',
+                'booking.rooms',
+                'billingGroup.payerGuest',
+                'billingGroup.bookings.room',
+                'billingGroup.bookings.rooms',
+            ])
             ->orderByDesc('payment_date')
             ->get();
+        $paymentReportDetails = $this->paymentReportDetails($payments);
         $bookings = Booking::query()
             ->with(['guest', 'room', 'rooms'])
             ->where(function (Builder $query) use ($start, $end): void {
@@ -79,6 +88,7 @@ class ReportController extends Controller
             'start' => $start,
             'end' => $end,
             'payments' => $payments,
+            'paymentReportDetails' => $paymentReportDetails,
             'bookingsWithoutPeriodPayments' => $bookingsWithoutPeriodPayments,
             'totalIncome' => (float) $payments->sum('amount'),
             'transactionCount' => $payments->count(),
@@ -99,16 +109,24 @@ class ReportController extends Controller
     {
         [$period, $anchorDate, $start, $end] = $this->periodRange($request);
         $payments = $this->paymentsForRange($start, $end)
-            ->with(['booking.guest', 'booking.room', 'billingGroup.payerGuest', 'billingGroup.bookings:id,billing_group_id'])
+            ->with([
+                'booking.guest',
+                'booking.room',
+                'booking.rooms',
+                'billingGroup.payerGuest',
+                'billingGroup.bookings.room',
+                'billingGroup.bookings.rooms',
+            ])
             ->orderBy('payment_date')
             ->get();
+        $paymentReportDetails = $this->paymentReportDetails($payments);
         $periodLabel = $period === 'week' ? 'mingguan' : 'bulanan';
         $filename = "laporan-pembayaran-{$periodLabel}-{$anchorDate->format('Y-m-d')}.csv";
 
-        return response()->streamDownload(function () use ($payments) {
+        return response()->streamDownload(function () use ($payments, $paymentReportDetails) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['Tanggal', 'Nomor Pembayaran', 'Nomor Booking', 'Nama Tamu', 'Tipe Booking', 'Nomor Kamar', 'Metode', 'Nominal', 'Catatan'], ';', '"', '\\');
+            fputcsv($output, ['Tanggal', 'Nomor Pembayaran', 'Nomor Booking', 'Nama Tamu', 'Tipe Booking', 'Nomor Kamar', 'Status', 'Metode', 'Nominal', 'Catatan'], ';', '"', '\\');
 
             foreach ($payments as $payment) {
                 fputcsv($output, [
@@ -116,8 +134,9 @@ class ReportController extends Controller
                     $payment->payment_number,
                     $payment->billingGroup?->invoice_number ?? $payment->booking?->booking_number,
                     $this->safeCsvText($payment->billingGroup?->payerGuest?->full_name ?? $payment->booking?->guest?->full_name),
-                    $payment->booking?->booking_type?->label() ?? '',
-                    $this->safeCsvText($payment->booking?->room?->room_number),
+                    $paymentReportDetails[$payment->id]['booking_type'],
+                    $this->safeCsvText($paymentReportDetails[$payment->id]['rooms']),
+                    $this->safeCsvText($paymentReportDetails[$payment->id]['status']),
                     $payment->payment_method->label(),
                     $payment->amount,
                     $this->safeCsvText($payment->notes),
@@ -161,5 +180,37 @@ class ReportController extends Controller
         $value = $value ?? '';
 
         return preg_match('/^[\t\r ]*[=+@-]/', $value) === 1 ? "'{$value}" : $value;
+    }
+
+    private function paymentReportDetails(Collection $payments): array
+    {
+        return $payments->mapWithKeys(function (Payment $payment): array {
+            $bookings = $payment->billingGroup?->bookings ?? collect([$payment->booking])->filter();
+            $rooms = $bookings->flatMap(function (Booking $booking) {
+                return $booking->rooms->isNotEmpty()
+                    ? $booking->rooms
+                    : collect([$booking->room])->filter();
+            })->pluck('room_number')->filter()->unique()->values()->join(', ');
+            $statuses = $bookings->map(function (Booking $booking) use ($payment): string {
+                $bookingStatus = $booking->booking_status?->label() ?? $booking->booking_status ?? '—';
+                $paymentStatus = $booking->payment_status?->label() ?? $booking->payment_status ?? '—';
+                $status = "{$bookingStatus} · {$paymentStatus}";
+
+                return $payment->billingGroup
+                    ? "{$booking->booking_number}: {$status}"
+                    : $status;
+            })->join('; ');
+            $bookingTypes = $bookings
+                ->map(fn (Booking $booking) => $booking->booking_type?->label() ?? 'Umum')
+                ->unique()
+                ->values()
+                ->join(', ');
+
+            return [$payment->id => [
+                'booking_type' => $bookingTypes ?: '—',
+                'rooms' => $rooms ?: '—',
+                'status' => $statuses ?: '—',
+            ]];
+        })->all();
     }
 }

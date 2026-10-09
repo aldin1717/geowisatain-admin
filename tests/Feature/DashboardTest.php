@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;
+use App\Enums\BookingStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -49,15 +50,55 @@ class DashboardTest extends TestCase
             'grand_total' => 500000,
             'booking_status' => 'confirmed',
         ]);
+        $departureRoom = Room::create([
+            'room_number' => '102',
+            'room_type_id' => $roomType->id,
+            'capacity' => 2,
+            'price_per_night' => 500000,
+        ]);
+        Booking::create([
+            'booking_number' => 'BK-DEPARTURE-TODAY',
+            'guest_id' => $guest->id,
+            'room_id' => $departureRoom->id,
+            'check_in_date' => today()->subDay(),
+            'check_out_date' => today(),
+            'num_guests' => 1,
+            'num_nights' => 1,
+            'room_rate' => 500000,
+            'grand_total' => 500000,
+            'booking_status' => BookingStatus::CheckedIn,
+        ]);
 
         $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('BK-TODAY')
             ->assertSee('Dashboard Guest')
+            ->assertViewHas('todayArrivals', 1)
+            ->assertViewHas('todayDepartures', 1)
             ->assertSee(route('bookings.index', [
                 'status' => 'confirmed',
                 'check_in_date' => today()->toDateString(),
+            ]))
+            ->assertSee(route('bookings.index', [
+                'status' => 'checked_in',
+                'check_out_date' => today()->toDateString(),
             ]));
+
+        $this->get(route('bookings.index', [
+            'status' => 'confirmed',
+            'check_in_date' => today()->toDateString(),
+        ]))
+            ->assertOk()
+            ->assertSee('BK-TODAY')
+            ->assertDontSee('BK-DEPARTURE-TODAY');
+
+        $this->get(route('bookings.index', [
+            'status' => 'checked_in',
+            'check_out_date' => today()->toDateString(),
+        ]))
+            ->assertOk()
+            ->assertSee('BK-DEPARTURE-TODAY')
+            ->assertDontSee('BK-TODAY');
     }
 }

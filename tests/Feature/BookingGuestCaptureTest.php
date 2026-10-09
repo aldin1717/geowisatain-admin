@@ -66,6 +66,7 @@ class BookingGuestCaptureTest extends TestCase
         $this->assertNull($guest->identity_type);
         $this->assertSame('Bandung', $guest->address);
         $this->assertSame($room->id, $booking->room_id);
+        $this->assertSame('reserved', $room->fresh()->status->value);
         $this->assertSame(75000.0, (float) $booking->additional_charge);
         $this->assertSame([
             ['name' => 'Bantal tambahan', 'amount' => 25000],
@@ -209,6 +210,54 @@ class BookingGuestCaptureTest extends TestCase
 
         $this->assertDatabaseMissing('guests', ['email' => 'cleaning-room@example.test']);
         $this->assertDatabaseMissing('bookings', ['room_id' => $room->id]);
+    }
+
+    public function test_receptionist_cannot_book_a_room_for_overlapping_dates(): void
+    {
+        $role = Role::create(['name' => 'Receptionist', 'slug' => 'receptionist']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+        $guest = Guest::create([
+            'guest_code' => 'G-OVERLAP-001',
+            'full_name' => 'Existing Guest',
+        ]);
+        $roomType = RoomType::create(['name' => 'Superior Twin', 'slug' => 'superior-twin']);
+        $room = Room::create([
+            'room_number' => '303',
+            'room_type_id' => $roomType->id,
+            'capacity' => 2,
+            'price_per_night' => 300000,
+            'status' => 'available',
+        ]);
+        $existingBooking = Booking::create([
+            'booking_number' => 'BK-OVERLAP-001',
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in_date' => now()->addDays(2)->toDateString(),
+            'check_out_date' => now()->addDays(4)->toDateString(),
+            'num_guests' => 1,
+            'num_nights' => 2,
+            'room_rate' => 300000,
+            'grand_total' => 600000,
+            'booking_status' => 'confirmed',
+        ]);
+        $existingBooking->rooms()->sync([$room->id]);
+
+        $this->actingAs($user)
+            ->post(route('bookings.store'), [
+                'guest_full_name' => 'Overlapping Guest',
+                'guest_phone' => '081234567890',
+                'guest_email' => 'overlap@example.test',
+                'selection_type' => 'room',
+                'room_ids' => [$room->id],
+                'check_in_date' => now()->addDays(3)->toDateString(),
+                'check_out_date' => now()->addDays(5)->toDateString(),
+                'num_guests' => 1,
+                'booking_type' => 'general',
+            ])
+            ->assertSessionHasErrors('room_ids');
+
+        $this->assertDatabaseMissing('guests', ['email' => 'overlap@example.test']);
+        $this->assertDatabaseCount('bookings', 1);
     }
 
     public function test_new_booking_creates_a_new_guest_without_changing_existing_guest(): void

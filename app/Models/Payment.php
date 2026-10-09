@@ -2,16 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
     protected $fillable = [
         'payment_number', 'booking_id', 'billing_group_id', 'payment_date', 'amount',
-        'payment_method', 'payment_status', 'notes', 'created_by'
+        'payment_method', 'payment_status', 'notes', 'created_by', 'shift_id',
     ];
 
     protected $casts = [
@@ -29,6 +28,11 @@ class Payment extends Model
     public function billingGroup()
     {
         return $this->belongsTo(BillingGroup::class);
+    }
+
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class);
     }
 
     public function creator()

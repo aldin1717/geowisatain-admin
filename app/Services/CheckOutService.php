@@ -37,7 +37,7 @@ class CheckOutService
             }
 
             $selectedRoomIds = $booking->selectedRoomIds();
-            $rooms = Room::whereIn('id', $selectedRoomIds)->get();
+            $rooms = Room::whereIn('id', $selectedRoomIds)->lockForUpdate()->get();
             if ($rooms->count() !== count($selectedRoomIds)) {
                 throw new \Exception('One or more selected rooms or ballrooms no longer exist.');
             }

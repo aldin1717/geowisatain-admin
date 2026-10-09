@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\RoomStatus;
+use App\Services\RoomAvailabilityService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -104,6 +105,24 @@ class StoreBookingRequest extends FormRequest
                 || ($selectionType === 'ballroom' && ($hasRoom || ! $hasBallroom))
                 || ($selectionType === 'both' && (! $hasRoom || ! $hasBallroom))) {
                 $validator->errors()->add('room_ids', 'Selected entries must match the selected booking option.');
+
+                return;
+            }
+
+            if ($validator->errors()->has('check_in_date') || $validator->errors()->has('check_out_date')) {
+                return;
+            }
+
+            $availabilityService = app(RoomAvailabilityService::class);
+            $unavailableRooms = $selectedRooms->filter(fn ($room) => ! $availabilityService->isAvailable(
+                $room->id,
+                $this->input('check_in_date'),
+                $this->input('check_out_date')
+            ));
+
+            if ($unavailableRooms->isNotEmpty()) {
+                $roomNumbers = $unavailableRooms->pluck('room_number')->join(', ');
+                $validator->errors()->add('room_ids', "Room(s) {$roomNumbers} are not available for the selected dates because of an existing booking or room status.");
             }
         });
     }
